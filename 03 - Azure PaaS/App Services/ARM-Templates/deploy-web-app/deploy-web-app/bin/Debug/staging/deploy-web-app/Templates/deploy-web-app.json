@@ -70,6 +70,13 @@
         "Description": "Name of the Storage Account where you want to have Diagnostic Logs Stored."
       }
     },
+    "backupStorageName": {
+      "type": "string",
+      "defaultValue": "webappbackupstore",
+      "metadata": {
+        "Description": "Name of the Storage Account where you want to have Backups Stored."
+      }
+    },
     "diagStorageType": {
       "type": "string",
       "defaultValue": "Standard_LRS",
@@ -80,6 +87,18 @@
       ],
       "metadata": {
         "Description": "The Type of Redundant Storage used for Diagnostics Logs."
+      }
+    },
+    "backupStorageType": {
+      "type": "string",
+      "defaultValue": "Standard_GRS",
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_GRS",
+        "Standard_ZRS"
+      ],
+      "metadata": {
+        "Description": "The Type of Redundant Storage used for Backups."
       }
     }
   },
@@ -98,7 +117,20 @@
       "properties": {
         "accountType": "[parameters('diagStorageType')]"
       }
-    },    
+    },
+    {
+      "name": "[parameters('backupStorageName')]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-05-01-preview",
+      "dependsOn": [ ],
+      "tags": {
+        "displayName": "[parameters('backupStorageName')]"
+      },
+      "properties": {
+        "accountType": "[parameters('backupStorageType')]"
+      }
+    },
     {
       "name": "[parameters('sqlServerName')]",
       "type": "Microsoft.Sql/servers",
