@@ -1,0 +1,233 @@
+﻿{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.1.0.0",
+  "parameters": {
+    "accountName": {
+      "type": "string",
+      "defaultValue": "Contoso",
+      "metadata": {
+        "description": "The name of the Azure Automation account to create and deploy to."
+      }
+    },
+    "accountLocation": {
+      "type": "string",
+      "defaultValue": "West Europe",
+      "allowedValues": [
+        "Japan East",
+        "East US 2",
+        "West Europe",
+        "Southeast Asia",
+        "South Central US"
+      ],
+      "metadata": {
+        "description": "The region to deploy the Automation account in."
+      }
+    },
+    "pricingTier": {
+      "type": "string",
+      "defaultValue": "Free",
+      "allowedValues": [
+        "Free",
+        "Basic"
+      ],
+      "metadata": {
+        "description": "The pricing tier for the account."
+      }
+    },
+    "azureSubscriptionIDValue": {
+      "type": "string",
+      "metadata": {
+        "description": "The value for the variable AzureSubscriptionID.  Enter your Azure Subscription ID."
+      }
+    },
+    "backupVaultNameValue": {
+      "type": "string",
+      "defaultValue": "Contoso",
+      "metadata": {
+        "description": "The value for the variable BackupVaultName."
+      }
+    },
+    "automationAccountResourceGroupValue": {
+      "type": "string",
+      "metadata": {
+        "description": "The value for the variable AutomationAccountResourceGroup. Enter the Resource Group where this Automation account will be located."
+      }
+    },
+    "azureServiceAccountUserName": {
+      "type": "string",
+      "metadata": {
+        "description": "The username for service account in Azure. The account will be used in Azure Automation to perform tasks on Azure Resources."
+      }
+    },
+    "azureServiceAccountPassword": {
+      "type": "secureString",
+      "metadata": {
+        "description": "The password for service account in Azure. The account will be used in Azure Automation to perform tasks on Azure Resources."
+      }
+    },
+    "domainServiceAccountUserName": {
+      "type": "string",
+      "metadata": {
+        "description": "The username for service account in the doman. The account shoud be domain administrator. The account will be used to join comptuers to domain."
+      }
+    },
+    "domainServiceAccountPassword": {
+      "type": "secureString",
+      "metadata": {
+        "description": "The password for service account in the domain. The account shoud be domain administrator. The account will be used to join comptuers to domain."
+      }
+    }
+  },
+  "variables": {
+    "BackupVaultName": "BackupVaultName",
+    "AzureSubscriptionID": "AzureSubscriptionID",
+    "AutomationAccountName": "AutomationAccountName",
+    "AutomationAccountResourceGroup": "AutomationAccountResourceGroup",
+    "AzureCredentials": "AzureCredentials",
+    "DomainCredentials": "DomainCredentials",
+    "AzureSubscriptionIDDescription": "Azure Subscription ID",
+    "BackupVaultNameDescription": "Azure Backup Vault Name",
+    "AutomationAccountNameDescription": "Automation Account Name",
+    "AutomationAccountResourceGroupDescripton": "Automation Account Resource Group Name",
+    "AzureCredentialsDescripton": "Administrator Credentials for Azure Subscription(s)",
+    "DomainCredentialsDescripton": "Domain Administrator Credentials",
+    "dscModules": {
+      "xComputerManagement": {
+        "moduleName": "xComputerManagement",
+        "moduleUri": "https://devopsgallerystorage.blob.core.windows.net/azureautomationpackages/xComputerManagement%5C1.3.0%5CxComputerManagement.zip"
+      }
+    }
+  },
+    "resources": [
+      {
+        "name": "[parameters('accountName')]",
+        "type": "Microsoft.Automation/automationAccounts",
+        "apiVersion": "2015-01-01-preview",
+        "location": "[parameters('accountLocation')]",
+        "dependsOn": [ ],
+        "tags": { },
+        "properties": {
+          "comment": "Resource defined structure",
+          "sku": {
+            "name": "[parameters('pricingTier')]"
+          }
+        },
+        "resources": [
+          {
+            "name": "[variables('AzureSubscriptionID')]",
+            "type": "variables",
+            "apiVersion": "2015-01-01-preview",
+            "location": "[parameters('accountLocation')]",
+            "dependsOn": [
+              "[concat('Microsoft.Automation/automationAccounts/', parameters('accountName'))]"
+            ],
+            "tags": {
+            },
+            "properties": {
+              "description": "[variables('AzureSubscriptionIDDescription')]",
+              "isEncrypted": 0,
+              "type": "string",
+              "value": "[concat('\"',parameters('azureSubscriptionIDValue'),'\"')]"
+            }
+          },
+          {
+            "name": "[variables('BackupVaultName')]",
+            "type": "variables",
+            "apiVersion": "2015-01-01-preview",
+            "location": "[parameters('accountLocation')]",
+            "dependsOn": [
+              "[concat('Microsoft.Automation/automationAccounts/', parameters('accountName'))]"
+            ],
+            "tags": {
+            },
+            "properties": {
+              "description": "[variables('BackupVaultNameDescription')]",
+              "isEncrypted": 0,
+              "type": "string",
+              "value": "[concat('\"',parameters('backupVaultNameValue'),'\"')]"
+            }
+          },
+          {
+            "name": "[variables('AutomationAccountName')]",
+            "type": "variables",
+            "apiVersion": "2015-01-01-preview",
+            "location": "[parameters('accountLocation')]",
+            "dependsOn": [
+              "[concat('Microsoft.Automation/automationAccounts/', parameters('accountName'))]"
+            ],
+            "tags": {
+            },
+            "properties": {
+              "description": "[variables('AutomationAccountNameDescription')]",
+              "isEncrypted": 0,
+              "type": "string",
+              "value": "[concat('\"',parameters('accountName'),'\"')]"
+            }
+          },
+          {
+            "name": "[variables('AutomationAccountResourceGroup')]",
+            "type": "variables",
+            "apiVersion": "2015-01-01-preview",
+            "location": "[parameters('accountLocation')]",
+            "dependsOn": [
+              "[concat('Microsoft.Automation/automationAccounts/', parameters('accountName'))]"
+            ],
+            "tags": {
+            },
+            "properties": {
+              "description": "[variables('AutomationAccountResourceGroupDescripton')]",
+              "isEncrypted": 0,
+              "type": "string",
+              "value": "[concat('\"',parameters('automationAccountResourceGroupValue'),'\"')]"
+            }
+          },
+          {
+            "name": "[variables('AzureCredentials')]",
+            "type": "credentials",
+            "apiVersion": "2015-01-01-preview",
+            "location": "[parameters('accountLocation')]",
+            "dependsOn": [
+              "[concat('Microsoft.Automation/automationAccounts/', parameters('accountName'))]"
+            ],
+            "tags": { },
+            "properties": {
+              "description": "[variables('AzureCredentialsDescripton')]",
+              "password": "[parameters('azureServiceAccountPassword')]",
+              "userName": "[parameters('azureServiceAccountUserName')]"
+            }
+          },
+          {
+            "name": "[variables('DomainCredentials')]",
+            "type": "credentials",
+            "apiVersion": "2015-01-01-preview",
+            "location": "[parameters('accountLocation')]",
+            "dependsOn": [
+              "[concat('Microsoft.Automation/automationAccounts/', parameters('accountName'))]"
+            ],
+            "tags": { },
+            "properties": {
+              "description": "[variables('DomainCredentialsDescripton')]",
+              "password": "[parameters('domainServiceAccountPassword')]",
+              "userName": "[parameters('domainServiceAccountUserName')]"
+            }
+          },
+          {
+          "name": "[concat(parameters('accountName'), '/', variables('dscModules').xComputerManagement.ModuleName)]",
+          "type": "microsoft.automation/automationAccounts/Modules",
+          "apiVersion": "2015-01-01-preview",
+          "tags": { },
+          "dependsOn": [
+            "[concat('Microsoft.Automation/automationAccounts/', parameters('accountName'))]"
+          ],
+          "properties": {
+            "contentLink": {
+              "uri": "[variables('dscModules').xComputerManagement.ModuleUri]"
+            }
+          }
+        }
+        ]
+      }
+
+    ],
+    "outputs": { }
+  }
