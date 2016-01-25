@@ -79,5 +79,7 @@ Configure-WinRMHttpsListener $HostName $port
 # Add firewall exception
 Add-FirewallException -port $winrmHttpsPort
 
+add-windowsfeature web-server -includeallsubfeature
+
 #################################################################################################################################
 #################################################################################################################################

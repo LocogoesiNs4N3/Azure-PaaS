@@ -64,13 +64,13 @@
       "properties": {
         "securityRules": [
           {
-            "name": "web_rule",
+            "name": "Any_port",
             "properties": {
               "description": "Allow WEB",
               "protocol": "Tcp",
               "sourcePortRange": "*",
-              "destinationPortRange": "80",
-              "sourceAddressPrefix": "Internet",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "*",
               "destinationAddressPrefix": "*",
               "access": "Allow",
               "priority": 101,
