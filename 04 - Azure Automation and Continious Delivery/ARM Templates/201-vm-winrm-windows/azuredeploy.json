@@ -52,9 +52,34 @@
         "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('subnetName'))]",
         "newStorageAccountName": "[concat(uniqueString(resourceGroup().id),'winrmsa')]",
         "apiVersion": "2015-06-15",
-        "hostDNSNameScriptArgument": "[concat('*.',resourceGroup().location,'.cloudapp.azure.com')]"
+        "hostDNSNameScriptArgument": "[concat('*.',resourceGroup().location,'.cloudapp.azure.com')]",
+        "FENSGName":  "FE_NSG"
     },
     "resources": [
+        {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[variables('FENSGName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "web_rule",
+            "properties": {
+              "description": "Allow WEB",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "80",
+              "sourceAddressPrefix": "Internet",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 101,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    },
         {
             "type": "Microsoft.Storage/storageAccounts",
             "name": "[variables('newStorageAccountName')]",
@@ -81,6 +106,9 @@
             "type": "Microsoft.Network/virtualNetworks",
             "name": "[variables('virtualNetworkName')]",
             "location": "[resourceGroup().location]",
+             "dependsOn": [
+                 "[concat('Microsoft.Network/networkSecurityGroups/', variables('FENSGName'))]"
+            ],
             "properties": {
                 "addressSpace": {
                     "addressPrefixes": [
@@ -91,7 +119,10 @@
                     {
                         "name": "[variables('subnetName')]",
                         "properties": {
-                            "addressPrefix": "[variables('subnetPrefix')]"
+                            "addressPrefix": "[variables('subnetPrefix')]",
+                            "networkSecurityGroup": {
+                                 "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('FENSGName'))]"
+                            }
                       }
                     }
                 ]
