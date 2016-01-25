@@ -180,9 +180,9 @@
                      "typeHandlerVersion": "1.4",
                      "settings": {
 						 "fileUris": [ 
-									"https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/201-vm-winrm-windows/ConfigureWinRM.ps1",
-									"https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/201-vm-winrm-windows/makecert.exe",
-									"https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/201-vm-winrm-windows/winrmconf.cmd"
+									"https://github.com/Lumagate/Azure-PaaS/raw/master/04%20-%20Azure%20Automation%20and%20Continious%20Delivery/ARM%20Templates/201-vm-winrm-windows/ConfigureWinRM.ps1",
+									"https://github.com/Lumagate/Azure-PaaS/raw/master/04%20-%20Azure%20Automation%20and%20Continious%20Delivery/ARM%20Templates/201-vm-winrm-windows/makecert.exe",
+									"https://github.com/Lumagate/Azure-PaaS/raw/master/04%20-%20Azure%20Automation%20and%20Continious%20Delivery/ARM%20Templates/201-vm-winrm-windows/winrmconf.cmd"
 								],
 						 "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -file ConfigureWinRM.ps1 ',variables('hostDNSNameScriptArgument'))]"
                      }
