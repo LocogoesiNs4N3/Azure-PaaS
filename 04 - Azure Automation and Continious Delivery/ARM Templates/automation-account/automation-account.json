@@ -40,19 +40,6 @@
         "description": "The value for the variable AzureSubscriptionID.  Enter your Azure Subscription ID."
       }
     },
-    "backupVaultNameValue": {
-      "type": "string",
-      "defaultValue": "Contoso",
-      "metadata": {
-        "description": "The value for the variable BackupVaultName."
-      }
-    },
-    "automationAccountResourceGroupValue": {
-      "type": "string",
-      "metadata": {
-        "description": "The value for the variable AutomationAccountResourceGroup. Enter the Resource Group where this Automation account will be located."
-      }
-    },
     "azureServiceAccountUserName": {
       "type": "string",
       "metadata": {
@@ -65,32 +52,42 @@
         "description": "The password for service account in Azure. The account will be used in Azure Automation to perform tasks on Azure Resources."
       }
     },
-    "domainServiceAccountUserName": {
+    "ServerValue": {
       "type": "string",
       "metadata": {
-        "description": "The username for service account in the doman. The account shoud be domain administrator. The account will be used to join comptuers to domain."
+        "description": "The name of the server that was deployed."
       }
     },
-    "domainServiceAccountPassword": {
+    "ServerResourceGroupValue": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of resource group where the server was deployed."
+      }
+    },
+    "serverAccountUserName": {
+      "type": "string",
+      "metadata": {
+        "description": "The username for the account that was entered during server deployment."
+      }
+    },
+    "serverAccountPassword": {
       "type": "secureString",
       "metadata": {
-        "description": "The password for service account in the domain. The account shoud be domain administrator. The account will be used to join comptuers to domain."
+        "description": "The password for the account that was entered during server deployment."
       }
     }
   },
   "variables": {
-    "BackupVaultName": "BackupVaultName",
+    "ServerName": "ServerName",
     "AzureSubscriptionID": "AzureSubscriptionID",
-    "AutomationAccountName": "AutomationAccountName",
-    "AutomationAccountResourceGroup": "AutomationAccountResourceGroup",
+    "ServerResourceGroup": "ServerResourceGroup",
     "AzureCredentials": "AzureCredentials",
-    "DomainCredentials": "DomainCredentials",
+    "ServerCredentials": "ServerCredentials",
     "AzureSubscriptionIDDescription": "Azure Subscription ID",
-    "BackupVaultNameDescription": "Azure Backup Vault Name",
-    "AutomationAccountNameDescription": "Automation Account Name",
-    "AutomationAccountResourceGroupDescripton": "Automation Account Resource Group Name",
+    "ServerNameDescription": "The Name of the server",
+    "ServerResourceGroupDescripton": "The resource group name for the server.",
     "AzureCredentialsDescripton": "Administrator Credentials for Azure Subscription(s)",
-    "DomainCredentialsDescripton": "Domain Administrator Credentials",
+    "ServerCredentialsDescripton": "Administrator Credentials to server.",
     "dscModules": {
       "xComputerManagement": {
         "moduleName": "xComputerManagement",
@@ -131,7 +128,7 @@
             }
           },
           {
-            "name": "[variables('BackupVaultName')]",
+            "name": "[variables('ServerName')]",
             "type": "variables",
             "apiVersion": "2015-01-01-preview",
             "location": "[parameters('accountLocation')]",
@@ -141,14 +138,14 @@
             "tags": {
             },
             "properties": {
-              "description": "[variables('BackupVaultNameDescription')]",
+              "description": "[variables('ServerNameDescription')]",
               "isEncrypted": 0,
               "type": "string",
-              "value": "[concat('\"',parameters('backupVaultNameValue'),'\"')]"
+              "value": "[concat('\"',parameters('ServerValue'),'\"')]"
             }
           },
           {
-            "name": "[variables('AutomationAccountName')]",
+            "name": "[variables('ServerResourceGroup')]",
             "type": "variables",
             "apiVersion": "2015-01-01-preview",
             "location": "[parameters('accountLocation')]",
@@ -158,27 +155,10 @@
             "tags": {
             },
             "properties": {
-              "description": "[variables('AutomationAccountNameDescription')]",
+              "description": "[variables('ServerResourceGroupDescripton')]",
               "isEncrypted": 0,
               "type": "string",
-              "value": "[concat('\"',parameters('accountName'),'\"')]"
-            }
-          },
-          {
-            "name": "[variables('AutomationAccountResourceGroup')]",
-            "type": "variables",
-            "apiVersion": "2015-01-01-preview",
-            "location": "[parameters('accountLocation')]",
-            "dependsOn": [
-              "[concat('Microsoft.Automation/automationAccounts/', parameters('accountName'))]"
-            ],
-            "tags": {
-            },
-            "properties": {
-              "description": "[variables('AutomationAccountResourceGroupDescripton')]",
-              "isEncrypted": 0,
-              "type": "string",
-              "value": "[concat('\"',parameters('automationAccountResourceGroupValue'),'\"')]"
+              "value": "[concat('\"',parameters('ServerResourceGroupValue'),'\"')]"
             }
           },
           {
@@ -197,7 +177,7 @@
             }
           },
           {
-            "name": "[variables('DomainCredentials')]",
+            "name": "[variables('ServerCredentials')]",
             "type": "credentials",
             "apiVersion": "2015-01-01-preview",
             "location": "[parameters('accountLocation')]",
@@ -206,9 +186,9 @@
             ],
             "tags": { },
             "properties": {
-              "description": "[variables('DomainCredentialsDescripton')]",
-              "password": "[parameters('domainServiceAccountPassword')]",
-              "userName": "[parameters('domainServiceAccountUserName')]"
+              "description": "[variables('ServerCredentialsDescripton')]",
+              "password": "[parameters('serverAccountPassword')]",
+              "userName": "[parameters('serverAccountUserName')]"
             }
           },
           {
