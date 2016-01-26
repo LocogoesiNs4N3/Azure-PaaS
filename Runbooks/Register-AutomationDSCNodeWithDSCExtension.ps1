@@ -1,9 +1,6 @@
 ﻿workflow Register-AutomationDSCNodeWithDSCExtension
 {
-    param (
 
-                   
-    )
 
     # Set Error Preference	
 	$ErrorActionPreference = "Stop"
