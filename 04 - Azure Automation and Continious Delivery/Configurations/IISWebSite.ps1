@@ -12,10 +12,9 @@
     Import-DSCResource -Module xWebAdministration
     Import-DSCResource -Module xWebDeploy
     Import-DSCResource -Module xNetworking
-    Import-DscResource -module xFileContent
     Import-DscResource -module xPSDesiredStateConfiguration
 
-    #Configure IIS front end
+    #Configure IIS 
     Node IIS
     {
         # Install IIS and  Web Management Tools
