@@ -91,13 +91,13 @@
     "AutomationAccountName": "AutomationAccountName",
     "AutomationAccountResourceGroup": "AutomationAccountResourceGroup",
     "runbooks": {
-        "Register-AutomationDSCNodeWithDSCExtension": {
+        "AutomationDSCNodeWithDSCExtension": {
             "runbookName" : "Register-AutomationDSCNodeWithDSCExtension",
-            "runbookURL" : "https://raw.githubusercontent.com/Lumagate/Azure-PaaS/master/04%20-%20Azure%20Automation%20and%20Continious%20Delivery/Runbooks/Register-AutomationDSCNodeWithDSCExtension.ps1"
+            "runbookURL" : "https://raw.githubusercontent.com/Lumagate/Azure-PaaS/master/Runbooks/Register-AutomationDSCNodeWithDSCExtension.ps1"
         },
-        "Start-IISDeployment": {
+        "IISDeployment": {
             "runbookName": "Start-IISDeployment",
-            "runbookURL": "https://raw.githubusercontent.com/Lumagate/Azure-PaaS/master/04%20-%20Azure%20Automation%20and%20Continious%20Delivery/Runbooks/Start-IISDeployment.ps1"
+            "runbookURL": "https://raw.githubusercontent.com/Lumagate/Azure-PaaS/master/Runbooks/Start-IISDeployment.ps1"
         }
         
     },
@@ -307,38 +307,44 @@
           }
         },
         {
-            "name": "[concat(parameters('accountName'), '/', variables('runbooks').Start-IISDeployment.runbookName)]",
+            "name": "[concat(parameters('accountName'), '/', variables('runbooks').IISDeployment.runbookName)]",
             "type": "Microsoft.Automation/automationAccounts/runbooks",
             "apiVersion": "2015-01-01-preview",
             "location": "[parameters('accountLocation')]",
             "tags": {
             },
-            "properties": {
-                "runbookType": "Script",
-                "logProgress": "false",
-                "logVerbose": "false",
-                "description": "dsecription",
-                "publishContentLink": {
-                    "uri": "[variables('runbooks').Start-IISDeployment.runbookURL]",
-                    "version": "1.0.0.0"
-                }
-
-            }
-        },
-        {
-            "name": "[concat(parameters('accountName'), '/', variables('runbooks').Register-AutomationDSCNodeWithDSCExtension.runbookName)]",
-            "type": "Microsoft.Automation/automationAccounts/runbooks",
-            "apiVersion": "2015-01-01-preview",
-            "location": "[parameters('accountLocation')]",
-            "tags": {
-            },
+            "dependsOn": [
+            "[concat('Microsoft.Automation/automationAccounts/', parameters('accountName'))]"
+          ],
             "properties": {
                 "runbookType": "PowerShell",
                 "logProgress": "false",
                 "logVerbose": "false",
                 "description": "dsecription",
                 "publishContentLink": {
-                    "uri": "[variables('runbooks').Register-AutomationDSCNodeWithDSCExtension.runbookURL]",
+                    "uri": "[variables('runbooks').IISDeployment.runbookURL]",
+                    "version": "1.0.0.0"
+                }
+
+            }
+        },
+        {
+            "name": "[concat(parameters('accountName'), '/', variables('runbooks').AutomationDSCNodeWithDSCExtension.runbookName)]",
+            "type": "Microsoft.Automation/automationAccounts/runbooks",
+            "apiVersion": "2015-01-01-preview",
+            "location": "[parameters('accountLocation')]",
+            "tags": {
+            },
+            "dependsOn": [
+            "[concat('Microsoft.Automation/automationAccounts/', parameters('accountName'))]"
+          ],
+            "properties": {
+                "runbookType": "Script",
+                "logProgress": "false",
+                "logVerbose": "false",
+                "description": "dsecription",
+                "publishContentLink": {
+                    "uri": "[variables('runbooks').AutomationDSCNodeWithDSCExtension.runbookURL]",
                     "version": "1.0.0.0"
                 }
 
