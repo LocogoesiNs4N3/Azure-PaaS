@@ -88,6 +88,19 @@
     "ServerResourceGroupDescripton": "The resource group name for the server.",
     "AzureCredentialsDescripton": "Administrator Credentials for Azure Subscription(s)",
     "ServerCredentialsDescripton": "Administrator Credentials to server.",
+    "AutomationAccountName": "AutomationAccountName",
+    "AutomationAccountResourceGroup": "AutomationAccountResourceGroup",
+    "runbooks": {
+        "Register-AutomationDSCNodeWithDSCExtension": {
+            "runbookName" : "Register-AutomationDSCNodeWithDSCExtension",
+            "runbookURL" : "https://raw.githubusercontent.com/Lumagate/Azure-PaaS/master/04%20-%20Azure%20Automation%20and%20Continious%20Delivery/Runbooks/Register-AutomationDSCNodeWithDSCExtension.ps1"
+        },
+        "Start-IISDeployment": {
+            "runbookName": "Start-IISDeployment",
+            "runbookURL": "https://raw.githubusercontent.com/Lumagate/Azure-PaaS/master/04%20-%20Azure%20Automation%20and%20Continious%20Delivery/Runbooks/Start-IISDeployment.ps1"
+        }
+        
+    },
     "dscModules": {
       "xNetworking": {
         "moduleName": "xNetworking",
@@ -171,6 +184,40 @@
               "isEncrypted": 0,
               "type": "string",
               "value": "[concat('\"',parameters('ServerResourceGroupValue'),'\"')]"
+            }
+          },
+          {
+            "name": "[variables('AutomationAccountName')]",
+            "type": "variables",
+            "apiVersion": "2015-01-01-preview",
+            "location": "[parameters('accountLocation')]",
+            "dependsOn": [
+              "[concat('Microsoft.Automation/automationAccounts/', parameters('accountName'))]"
+            ],
+            "tags": {
+            },
+            "properties": {
+              "description": "Automation account name.",
+              "isEncrypted": 0,
+              "type": "string",
+              "value": "[concat('\"',parameters('accountName'),'\"')]"
+            }
+          },
+          {
+            "name": "[variables('AutomationAccountResourceGroup')]",
+            "type": "variables",
+            "apiVersion": "2015-01-01-preview",
+            "location": "[parameters('accountLocation')]",
+            "dependsOn": [
+              "[concat('Microsoft.Automation/automationAccounts/', parameters('accountName'))]"
+            ],
+            "tags": {
+            },
+            "properties": {
+              "description": "Automation account RG.",
+              "isEncrypted": 0,
+              "type": "string",
+              "value": "[concat('\"',resourceGroup().name,'\"')]"
             }
           },
           {
@@ -258,6 +305,44 @@
               "uri": "[variables('dscModules').xWebDeploy.ModuleUri]"
             }
           }
+        },
+        {
+            "name": "[concat(parameters('accountName'), '/', variables('runbooks').Start-IISDeployment.runbookName)]",
+            "type": "Microsoft.Automation/automationAccounts/runbooks",
+            "apiVersion": "2015-01-01-preview",
+            "location": "[parameters('accountLocation')]",
+            "tags": {
+            },
+            "properties": {
+                "runbookType": "Script",
+                "logProgress": "false",
+                "logVerbose": "false",
+                "description": "dsecription",
+                "publishContentLink": {
+                    "uri": "[variables('runbooks').Start-IISDeployment.runbookURL]",
+                    "version": "1.0.0.0"
+                }
+
+            }
+        },
+        {
+            "name": "[concat(parameters('accountName'), '/', variables('runbooks').Register-AutomationDSCNodeWithDSCExtension.runbookName)]",
+            "type": "Microsoft.Automation/automationAccounts/runbooks",
+            "apiVersion": "2015-01-01-preview",
+            "location": "[parameters('accountLocation')]",
+            "tags": {
+            },
+            "properties": {
+                "runbookType": "PowerShell",
+                "logProgress": "false",
+                "logVerbose": "false",
+                "description": "dsecription",
+                "publishContentLink": {
+                    "uri": "[variables('runbooks').Register-AutomationDSCNodeWithDSCExtension.runbookURL]",
+                    "version": "1.0.0.0"
+                }
+
+            }
         }
         ]
       }
