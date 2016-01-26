@@ -1,8 +1,8 @@
 ﻿Configuration IISWebSite
 {
     param(
-        [string] $WebsitePath = "C:\inetpub\wwwroot",
-        [string] $WebAppName = "Default Web Site",
+        [string] $WebsitePath = "C:\inetpub\Lumagate",
+        [string] $WebAppName = "Lumagate",
         [int32] $WebsitePort = 80,
         [string] $WebDeployURI = "https://github.com/Lumagate/Azure-PaaS/raw/master/04%20-%20Azure%20Automation%20and%20Continious%20Delivery/IISExamplePage/WebDeploy_amd64_en-US.msi",
         [string] $WebPackageURI = "https://github.com/Lumagate/Azure-PaaS/raw/master/04%20-%20Azure%20Automation%20and%20Continious%20Delivery/IISExamplePage/IISPackage.zip",
@@ -37,6 +37,14 @@
             Ensure ="Present"
             Type = "Directory"
             DestinationPath = $WebsitePath
+        }
+
+        xWebsite Default
+        {
+            Ensure = "Present"
+            Name = "Default Web Site"
+            PhysicalPath = "%SystemDrive%\inetpub\wwwroot"
+            State = "Stopped"
         }
 
         # IIS server prep. Enabling site remote access

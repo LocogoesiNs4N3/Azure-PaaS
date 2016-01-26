@@ -101,7 +101,7 @@
         }
     
 
-        $PublicConfiguration = @{
+        $PublicConfiguration = ConvertTo-Json -Depth 8 @{
           SasToken = ""
           ModulesUrl = "https://eus2oaasibizamarketprod1.blob.core.windows.net/automationdscpreview/RegistrationMetaConfigV2.zip"
           ConfigurationFunction = "RegistrationMetaConfigV2.ps1\RegistrationMetaConfigV2"
@@ -113,7 +113,7 @@
              Password = 'PrivateSettingsRef:RegistrationKey'
         }
           RegistrationUrl = $RegistrationInfo.Endpoint
-          NodeConfigurationName = $NodeConfigName
+          NodeConfigurationName = ""
           ConfigurationMode = "ApplyAndMonitor"
           ConfigurationModeFrequencyMins = 15
           RefreshFrequencyMins = 30
@@ -123,7 +123,7 @@
           }
         }
 
-        $PrivateConfiguration =  @{
+        $PrivateConfiguration = ConvertTo-Json -Depth 8 @{
           Items = @{
              RegistrationKey = $RegistrationInfo.PrimaryKey
           }
@@ -138,9 +138,9 @@
                            -Publisher Microsoft.Powershell `
                            -Name DSC `
                            -ExtensionType DSC `
-                           -TypeHandlerVersion 2.7 `
-                           -Settings $PublicConfiguration `
-                           -ProtectedSettings $PrivateConfiguration `
+                           -TypeHandlerVersion 2.8 `
+                           -SettingString $PublicConfiguration `
+                           -ProtectedSettingString $PrivateConfiguration `
                            -Location $VM.Location
     
             If ($VmExtension.Status -eq 'Succeeded')

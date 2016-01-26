@@ -117,6 +117,14 @@
       "xWebDeploy": {
         "moduleName": "xWebDeploy",
         "moduleUri": "https://devopsgallerystorage.blob.core.windows.net/packages/xwebdeploy.1.0.0.nupkg"
+      },
+      "AzureRMAutomation": {
+        "moduleName": "AzureRM.Automation",
+        "moduleUri": "https://devopsgallerystorage.blob.core.windows.net/packages/azurerm.automation.1.0.3.nupkg"
+      },
+      "AzureRMProfile": {
+        "moduleName": "AzureRM.Profile",
+        "moduleUri": "https://devopsgallerystorage.blob.core.windows.net/packages/azurerm.profile.1.0.3.nupkg"
       }
     }
   },
@@ -303,6 +311,35 @@
           "properties": {
             "contentLink": {
               "uri": "[variables('dscModules').xWebDeploy.ModuleUri]"
+            }
+          }
+        },
+        {
+          "name": "[concat(parameters('accountName'), '/', variables('dscModules').AzureRMProfile.ModuleName)]",
+          "type": "microsoft.automation/automationAccounts/Modules",
+          "apiVersion": "2015-01-01-preview",
+          "tags": { },
+          "dependsOn": [
+            "[concat('Microsoft.Automation/automationAccounts/', parameters('accountName'))]"
+          ],
+          "properties": {
+            "contentLink": {
+              "uri": "[variables('dscModules').AzureRMProfile.ModuleUri]"
+            }
+          }
+        },
+        {
+          "name": "[concat(parameters('accountName'), '/', variables('dscModules').AzureRMAutomation.ModuleName)]",
+          "type": "microsoft.automation/automationAccounts/Modules",
+          "apiVersion": "2015-01-01-preview",
+          "tags": { },
+          "dependsOn": [
+            "[concat('Microsoft.Automation/automationAccounts/', parameters('accountName'))]",
+            "[concat('Microsoft.Automation/automationAccounts/', parameters('accountName'), '/Modules/', variables('dscModules').AzureRMProfile.ModuleName)]"
+          ],
+          "properties": {
+            "contentLink": {
+              "uri": "[variables('dscModules').AzureRMAutomation.ModuleUri]"
             }
           }
         },
