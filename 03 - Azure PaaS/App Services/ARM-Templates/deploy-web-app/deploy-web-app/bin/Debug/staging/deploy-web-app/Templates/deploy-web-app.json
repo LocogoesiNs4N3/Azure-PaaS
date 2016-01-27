@@ -5,7 +5,7 @@
     "hostingPlanName": {
       "type": "string",
       "minLength": 1,
-      "defaultValue": "lumahostingplan"
+      "defaultValue": "lumahostingplan001"
     },
     "sku": {
       "type": "string",
@@ -37,15 +37,15 @@
     },
     "sqlServerName": {
       "type": "string",
-      "defaultValue": "lumasqlsrv"
+      "defaultValue": "lumasqlsrv001"
     },
     "databaseName": {
       "type": "string",
-      "defaultValue": "lumasqlsrvdb"
+      "defaultValue": "lumasqlsrvdb001"
     },
     "websiteName": {
       "type": "string",
-      "defaultValue": "lumawebappdemo"
+      "defaultValue": "lumawebappdemo001"
     },
     "collation": {
       "type": "string",
@@ -65,14 +65,14 @@
     },
     "diagStorageName": {
       "type": "string",
-      "defaultValue": "webappdiagstore",
+      "defaultValue": "webappdiagstore001",
       "metadata": {
         "Description": "Name of the Storage Account where you want to have Diagnostic Logs Stored."
       }
     },
     "backupStorageName": {
       "type": "string",
-      "defaultValue": "webappbackupstore",
+      "defaultValue": "webappbackupstore001",
       "metadata": {
         "Description": "Name of the Storage Account where you want to have Backups Stored."
       }
