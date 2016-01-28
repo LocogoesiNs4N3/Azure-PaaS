@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <parameters>
-  <parameter name="IIS Web Application Name" description="" value="lumawebsite" tags="IisApp">
+  <parameter name="IIS Web Application Name" description="" value="lumawebappdemo001__dev" tags="IisApp">
     <parameterEntry kind="ProviderPath" scope="IisApp" match="^C:\\GitHub\\Azure-PaaS\\03\ -\ Azure\ PaaS\\App\ Services\\Applications\\deploy-luma-website\\deploy-luma-website\\obj\\Release\\Package\\PackageTmp$" />
     <parameterEntry kind="ProviderPath" scope="setAcl" match="^C:\\GitHub\\Azure-PaaS\\03\ -\ Azure\ PaaS\\App\ Services\\Applications\\deploy-luma-website\\deploy-luma-website\\obj\\Release\\Package\\PackageTmp$" />
   </parameter>
