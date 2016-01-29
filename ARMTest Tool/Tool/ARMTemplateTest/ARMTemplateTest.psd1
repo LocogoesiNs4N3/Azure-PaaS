@@ -12,7 +12,7 @@ Generated on: 14/01/2016
 RootModule = 'ARMTemplateTest.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.8.4'
+ModuleVersion = '2.0.1'
 
 # ID used to uniquely identify this module
 GUID = 'c87626f0-cf4a-48c2-bbda-1bb0550da287'
@@ -79,6 +79,8 @@ FunctionsToExport = @('Remove-ARMTemplateDeployment'
                       'Set-ARMTemplateParameterFile'
                       'Set-ARMTemplateFile'
                       'Export-ARMTemplateLogToCSV'
+                      'Get-ARMTemplateRandomStorageAccountName'
+                      'Get-ARMTemplateRandomPassword'
                       )
 
 # Cmdlets to export from this module
@@ -109,4 +111,3 @@ ModuleList = @('ARMTemplateTest.psm1')
 # DefaultCommandPrefix = ''
 
 }
-
