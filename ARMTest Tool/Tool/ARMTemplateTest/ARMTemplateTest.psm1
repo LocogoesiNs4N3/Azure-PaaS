@@ -1,4 +1,165 @@
-﻿function Get-ARMTemplateRandomStorageAccountName {
+﻿function Get-ARMTemplateRandomAppName {
+<#
+
+    .SYNOPSIS
+        Generates random App name.
+
+    .DESCRIPTION
+        Generates random App name.
+
+    .PARAMETER  Length
+        Mandatory parameter. Specify how many
+        characters the returned string should
+        contain.
+
+    .EXAMPLE
+        Get-ARMTemplateRandomAppName -Length 10
+        Description
+        -----------
+        Generates random App name with 10 characters
+
+    .OUTPUTS
+        System.String.
+        Returns string of small letters.
+
+#>
+[CmdletBinding(DefaultParameterSetName='DefaultParameterSet')]
+[OutputType([string])]
+param (
+        [Parameter(ParameterSetName='DefaultParameterSet',Position=0,Mandatory=$true)]
+        [int]
+        $Length
+    )
+    
+    # Set Error Preference	
+	$ErrorActionPreference = 'Stop'
+
+    $charSetLetters = 'abcdefghijklmnopqrstuvwxyz'.ToCharArray()
+    $FirstLetter= [String]::Join('', (1..$Length | % { $charSetLetters | Get-Random -ErrorAction Stop }))
+    $AllString = $FirstLetter
+
+    return $AllString
+}
+function Get-ARMTemplateRandomUserName {
+<#
+
+    .SYNOPSIS
+        Generates random User name.
+
+    .DESCRIPTION
+        Generates random User name.
+
+    .PARAMETER  Length
+        Mandatory parameter. Specify how many
+        characters the returned string should
+        contain.
+
+    .EXAMPLE
+        Get-ARMTemplateRandomUserName -Length 10
+        Description
+        -----------
+        Generates random DNS Label with 10 characters
+
+    .OUTPUTS
+        System.String.
+        Returns string of small numbers and letters.
+
+#>
+[CmdletBinding(DefaultParameterSetName='DefaultParameterSet')]
+[OutputType([string])]
+param (
+        [Parameter(ParameterSetName='DefaultParameterSet',Position=0,Mandatory=$true)]
+        [int]
+        $Length
+    )
+    
+    # Set Error Preference	
+	$ErrorActionPreference = 'Stop'
+
+    $Length =$Length-4
+    $charSet = 'abcdefghijklmnopqrstuvwxyz'.ToCharArray()
+    $RandomString=[String]::Join('', (1..$Length | % { $charSet | Get-Random -ErrorAction Stop }))
+    $AllString = 'user' + $RandomString
+
+    return $AllString
+}
+function Get-ARMTemplateRandomVMName {
+<#
+
+    .SYNOPSIS
+        Generates random VM name.
+
+    .DESCRIPTION
+        Generates random VM name.
+
+    .PARAMETER  Length
+        Mandatory parameter. Specify how many
+        characters the returned string should
+        contain.
+
+    .EXAMPLE
+        Get-ARMTemplateRandomVMName -Length 8
+        Description
+        -----------
+        Generates random VMName with 8 characters
+
+    .OUTPUTS
+        System.String.
+        Returns string of small letters.
+
+#>
+[CmdletBinding(DefaultParameterSetName='DefaultParameterSet')]
+[OutputType([string])]
+param (
+        [Parameter(ParameterSetName='DefaultParameterSet',Position=0,Mandatory=$true)]
+        [int]
+        $Length
+    )
+    
+    # Set Error Preference	
+	$ErrorActionPreference = 'Stop'
+
+    $charSetLetters = 'abcdefghijklmnopqrstuvwxyz'.ToCharArray()
+    $FirstLetter= [String]::Join('', (1..$Length | % { $charSetLetters | Get-Random -ErrorAction Stop }))
+    $AllString = $FirstLetter
+
+    return $AllString
+}
+function Get-ARMTemplateSSHPublicKeyData {
+<#
+
+    .SYNOPSIS
+        Gets valid SSH Public Key string.
+
+    .DESCRIPTION
+        Gets valid SSH Public Key string.
+
+    .EXAMPLE
+        Get-ARMTemplateSSHPublicKeyData
+        Description
+        -----------
+        Gets valid SSH Public Key string.
+
+    .OUTPUTS
+        System.String.
+        Returns string of valid sshk public key.
+
+#>
+[CmdletBinding()]
+[OutputType([string])]
+param (
+    )    
+    
+    # Set Error Preference	
+	$ErrorActionPreference = 'Stop'
+    $PublicKeyFilePath = Join-Path $PSScriptRoot 'id_rsa.pub'
+
+    $SSHKeyData = (Get-Content -Path $PublicKeyFilePath -Encoding UTF8 -ErrorAction Stop).ToString()
+
+    return $SSHKeyData
+
+}
+function Get-ARMTemplateRandomStorageAccountName {
 <#
 
     .SYNOPSIS
@@ -1325,15 +1486,15 @@ Function Set-ARMTemplateParameterFile {
 
     .SYNOPSIS
         Changes Location, StorageAccountName,
-        StorageAccountNamePrefix, DNSLabel or
-        Password parameter in ARM Template json 
-        parameters file.
+        StorageAccountNamePrefix, DNSLabel,
+        Password, SSHKeyData, VMName, UserName, AppName
+        parameter in ARM Template json parameters file.
 
     .DESCRIPTION
         Changes Location, StorageAccountName,
-        StorageAccountNamePrefix, DNSLabel or
-        Password parameter in ARM Template json 
-        parameters file.
+        StorageAccountNamePrefix, DNSLabel,
+        Password, SSHKeyData, VMName, UserName, AppName
+        parameter in ARM Template json parameters file.
 
     .PARAMETER  ARMTemplateParameterFile
         Location to azuredeploy.parameters.json file.
@@ -1367,15 +1528,40 @@ Function Set-ARMTemplateParameterFile {
         searchs paramteres with names that match 
         the words 'dnsLabel', 'dnsName', 'DnsPrefix'
         or 'PublicIPName'. Will also search for exact 
-        parameter named 'publicIPAddressName'.
-        When found the value for those paramaters 
-        will be replace with random string of 12
-        characters.
+        parameter named 'publicIPAddressName' or
+        'endpointName'. When found the value for 
+        those paramaters will be replace with random 
+        string of 12 characters.
         If value Password is chosen  the function 
         searchs paramteres with names that match 
         the word 'Password'. When found the value 
         for those paramaters will be replace with 
         random complex password of 10 characters.
+        If value SSHKeyData is chosen  the function 
+        searchs paramteres with names that match 
+        the exact words 'sshPublicKey' and 'sshKeyData'. 
+        When found the value for those paramaters will 
+        be replace with valid SSH RSA Public Key string.
+        If value VMName is chosen  the function 
+        searchs paramteres with names that match 
+        the words 'vmName', 'clusterName', 'ServerName'
+        and 'vmssName'. When found the value 
+        for those paramaters will be replace with 
+        random string of 8 characters that are only
+        small letters.
+        If value UserName is chosen  the function 
+        searchs paramteres with names that match 
+        the word 'Username' or 'databaseAccountName'. 
+        Will also search for parameter exactly named 
+        'administratorLogin'. When found the value 
+        for those paramaters will be replace with 
+        random string of 8 characters that starts 
+        with user prefix.
+        If value AppName is chosen  the function 
+        searchs paramteres with names that match 
+        the word 'AppName' or 'PlanName'. When 
+        found the value for those paramaters will 
+        be replace with random string of 8 characters.
 
     .PARAMETER  AzureRegion
         Valid Azure region value. This paramater
@@ -1387,6 +1573,50 @@ Function Set-ARMTemplateParameterFile {
         -----------
         Find parameter of type 'StorageAccountName' in ARM Template paramaters' file and replace the value for
         that parameter with random string
+
+        Example Variables
+        -----------------
+        $path = 'D:\ARMTEST\Downloaded\101-application-gateway-create\azuredeploy.parameters.json'
+
+    .EXAMPLE
+        Set-ARMTemplateParameterFile -ARMTemplateParameterFile $path -SetType 'VMName'
+        Description
+        -----------
+        Find parameter of type 'VMName' in ARM Template paramaters' file and replace the value for
+        that parameter with random string of 8 characters
+
+        Example Variables
+        -----------------
+        $path = 'D:\ARMTEST\Downloaded\101-application-gateway-create\azuredeploy.parameters.json'
+
+    .EXAMPLE
+        Set-ARMTemplateParameterFile -ARMTemplateParameterFile $path -SetType 'AppName'
+        Description
+        -----------
+        Find parameter of type 'AppName' in ARM Template paramaters' file and replace the value for
+        that parameter with random string of 8 characters
+
+        Example Variables
+        -----------------
+        $path = 'D:\ARMTEST\Downloaded\101-application-gateway-create\azuredeploy.parameters.json'
+
+    .EXAMPLE
+        Set-ARMTemplateParameterFile -ARMTemplateParameterFile $path -SetType 'UserName'
+        Description
+        -----------
+        Find parameter of type 'UserName' in ARM Template paramaters' file and replace the value for
+        that parameter with random string of 8 characters that starts with user prefix.
+
+        Example Variables
+        -----------------
+        $path = 'D:\ARMTEST\Downloaded\101-application-gateway-create\azuredeploy.parameters.json'
+
+    .EXAMPLE
+        Set-ARMTemplateParameterFile -ARMTemplateParameterFile $path -SetType 'SSHKeyData'
+        Description
+        -----------
+        Find parameter of type 'SSHKeyData' in ARM Template paramaters' file and replace the value for
+        that parameter with valid SSH public key.
 
         Example Variables
         -----------------
@@ -1468,7 +1698,7 @@ param (
         $ARMTemplateParameterFile,
 
         [Parameter(ParameterSetName='DefaultParameterSet',Position=1,Mandatory=$true)]
-        [ValidateSet('Location','StorageAccountName','StorageAccountNamePrefix','DNSLabel','Password')]
+        [ValidateSet('Location','StorageAccountName','StorageAccountNamePrefix','DNSLabel','Password','SSHKeyData','VMName','UserName','AppName')]
         [string]
         $SetType,
 
@@ -1568,14 +1798,18 @@ param (
                     # Go trough every Parameter Name
                     foreach ($ParameterName in $ParameterNames)
                     {
-                        $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $ParameterName  is: ' + $ParameterName 
-                        Write-Verbose `
-                              -Message $VerboseMessage 
-
                         If ($ParameterName -match $LocationKeyword)
                         {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword match: ' + $LocationKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
                             # Check if there are multiple values
-                            If ($ParamFileObj.($ParameterName).Value)
+                            If ($null -ne $ParamFileObj.($ParameterName).Value)
                             {
                                 If (($ParamFileObj.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
                                 {
@@ -1595,7 +1829,7 @@ param (
                             }
 
                             # Check if there are multiple values
-                            If ($ParamFileObj.parameters.($ParameterName).Value)
+                            If ($null -ne $ParamFileObj.parameters.($ParameterName).Value)
                             {
                                 If (($ParamFileObj.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
                                 {
@@ -1615,7 +1849,7 @@ param (
                             }
 
                             # Check if there are multiple values
-                            If ($ParamFileObj.parameters.parameters.($ParameterName).Value)
+                            If ($null -ne $ParamFileObj.parameters.parameters.($ParameterName).Value)
                             {
                                 If (($ParamFileObj.parameters.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
                                 {
@@ -1648,8 +1882,6 @@ param (
                     -Message $ErrorMessage `
                     -ErrorAction Stop
             }
-            
-        
         }
         #endregion
 
@@ -1700,14 +1932,18 @@ param (
                     # Go trough every Parameter Name
                     foreach ($ParameterName in $ParameterNames)
                     {
-                        $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $ParameterName  is: ' + $ParameterName 
-                        Write-Verbose `
-                              -Message $VerboseMessage 
-
                         If ($ParameterName -match $StorageAccountNameKeyword)
                         {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword match: ' + $StorageAccountNameKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
                             # Check if there are multiple values
-                            If ($ParamFileObj.($ParameterName).Value)
+                            If ($null -ne $ParamFileObj.($ParameterName).Value)
                             {
                                 If (($ParamFileObj.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
                                 {
@@ -1733,8 +1969,9 @@ param (
                                     $ParamFileObjChanged = $true
                                 }
                             }
+
                             # Check if there are multiple values
-                            If ($ParamFileObj.parameters.($ParameterName).Value)
+                            If ($null -ne $ParamFileObj.parameters.($ParameterName).Value)
                             {
                                 If (($ParamFileObj.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
                                 {
@@ -1762,7 +1999,7 @@ param (
                             }
 
                             # Check if there are multiple values
-                            If ($ParamFileObj.parameters.parameters.($ParameterName).Value)
+                            If ($null -ne $ParamFileObj.parameters.parameters.($ParameterName).Value)
                             {
                                 If (($ParamFileObj.parameters.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
                                 {
@@ -1837,14 +2074,18 @@ param (
                     # Go trough every Parameter Name
                     foreach ($ParameterName in $ParameterNames)
                     {
-                        $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $ParameterName  is: ' + $ParameterName 
-                        Write-Verbose `
-                              -Message $VerboseMessage 
-
                         If ($ParameterName -eq $ExactStorageAccountNameKeyword)
                         {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword exact match: ' + $ExactStorageAccountNameKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
                             # Check if there are multiple values
-                            If ($ParamFileObj.($ParameterName).Value)
+                            If ($null -ne $ParamFileObj.($ParameterName).Value)
                             {
                                 If (($ParamFileObj.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
                                 {
@@ -1872,7 +2113,7 @@ param (
                             }
 
                             # Check if there are multiple values
-                            If ($ParamFileObj.parameters.($ParameterName).Value)
+                            If ($null -ne $ParamFileObj.parameters.($ParameterName).Value)
                             {
                                 If (($ParamFileObj.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
                                 {
@@ -1900,7 +2141,7 @@ param (
                             }
 
                             # Check if there are multiple values
-                            If ($ParamFileObj.parameters.parameters.($ParameterName).Value)
+                            If ($null -ne $ParamFileObj.parameters.parameters.($ParameterName).Value)
                             {
                                 If (($ParamFileObj.parameters.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
                                 {
@@ -1941,8 +2182,6 @@ param (
                     -Message $ErrorMessage `
                     -ErrorAction Stop
             }
-            
-        
         }
         #endregion
 
@@ -1994,14 +2233,18 @@ param (
                     # Go trough every Parameter Name
                     foreach ($ParameterName in $ParameterNames)
                     {
-                        $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $ParameterName  is: ' + $ParameterName 
-                        Write-Verbose `
-                              -Message $VerboseMessage 
-
                         If ($ParameterName -match $StorageAccountNamePrefixKeyword)
                         {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword match: ' + $StorageAccountNamePrefixKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
                             # Check if there are multiple values
-                            If ($ParamFileObj.($ParameterName).Value)
+                            If ($null -ne $ParamFileObj.($ParameterName).Value)
                             {
                                 If (($ParamFileObj.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
                                 {
@@ -2029,7 +2272,7 @@ param (
                             }
                             
                             # Check if there are multiple values
-                            If ($ParamFileObj.parameters.($ParameterName).Value)
+                            If ($null -ne $ParamFileObj.parameters.($ParameterName).Value)
                             {
                                 If (($ParamFileObj.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
                                 {
@@ -2057,7 +2300,7 @@ param (
                             }
 
                             # Check if there are multiple values
-                            If ($ParamFileObj.parameters.parameters.($ParameterName).Value)
+                            If ($null -ne $ParamFileObj.parameters.parameters.($ParameterName).Value)
                             {
                                 If (($ParamFileObj.parameters.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
                                 {
@@ -2131,14 +2374,17 @@ param (
                     # Go trough every Parameter Name
                     foreach ($ParameterName in $ParameterNames)
                     {
-                        $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $ParameterName  is: ' + $ParameterName 
-                        Write-Verbose `
-                              -Message $VerboseMessage 
-
                         If ($ParameterName -eq $ExactStorageAccountNamePrefixKeyword)
                         {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword exact match: ' + $ExactStorageAccountNamePrefixKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
                             # Check if there are multiple values
-                            If ($ParamFileObj.($ParameterName).Value)
+                            If ($null -ne $ParamFileObj.($ParameterName).Value)
                             {
                                 If (($ParamFileObj.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
                                 {
@@ -2166,7 +2412,7 @@ param (
                             }
 
                             # Check if there are multiple values
-                            If ($ParamFileObj.parameters.($ParameterName).Value)
+                            If ($null -ne $ParamFileObj.parameters.($ParameterName).Value)
                             {
                                 If (($ParamFileObj.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
                                 {
@@ -2194,7 +2440,7 @@ param (
                             }
 
                             # Check if there are multiple values
-                            If ($ParamFileObj.parameters.parameters.($ParameterName).Value)
+                            If ($null -ne $ParamFileObj.parameters.parameters.($ParameterName).Value)
                             {
                                 If (($ParamFileObj.parameters.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
                                 {
@@ -2235,8 +2481,6 @@ param (
                     -Message $ErrorMessage `
                     -ErrorAction Stop
             }
-            
-        
         }
         #endregion
         
@@ -2288,14 +2532,18 @@ param (
                     # Go trough every Parameter Name
                     foreach ($ParameterName in $ParameterNames)
                     {
-                        $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $ParameterName  is: ' + $ParameterName 
-                        Write-Verbose `
-                              -Message $VerboseMessage 
-
                         If ($ParameterName -match $DNSLabelKeyword)
                         {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword match: ' + $DNSLabelKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+                            
                             # Check if there are multiple values
-                            If ($ParamFileObj.($ParameterName).Value)
+                            If ($null -ne $ParamFileObj.($ParameterName).Value)
                             {
                                 If (($ParamFileObj.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
                                 {
@@ -2303,10 +2551,10 @@ param (
                                     foreach ($PValue in $ParamFileObj.($ParameterName).Value)
                                     {
                                         # Set Value
-                                        $DNSLableName = Get-ARMTemplateRandomDNSLabel `
+                                        $DNSLabelName = Get-ARMTemplateRandomDNSLabel `
                                                                 -Length 12 `
                                                                 -ErrorAction Stop
-                                        $ParamFileObj.($ParameterName).Value[$ValueCount] = $DNSLableName
+                                        $ParamFileObj.($ParameterName).Value[$ValueCount] = $DNSLabelName
                                         $ParamFileObjChanged = $true
                                         $ValueCount++
                                     }
@@ -2314,16 +2562,16 @@ param (
                                 Else
                                 {
                                     # Set Value
-                                    $DNSLableName = Get-ARMTemplateRandomDNSLabel `
+                                    $DNSLabelName = Get-ARMTemplateRandomDNSLabel `
                                                             -Length 12 `
                                                             -ErrorAction Stop
-                                    $ParamFileObj.($ParameterName).Value = $DNSLableName
+                                    $ParamFileObj.($ParameterName).Value = $DNSLabelName
                                     $ParamFileObjChanged = $true
                                 }
                             }
 
                             # Check if there are multiple values
-                            If ($ParamFileObj.parameters.($ParameterName).Value)
+                            If ($null -ne $ParamFileObj.parameters.($ParameterName).Value)
                             {
                                 If (($ParamFileObj.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
                                 {
@@ -2331,10 +2579,10 @@ param (
                                     foreach ($PValue in $ParamFileObj.parameters.($ParameterName).Value)
                                     {
                                         # Set Value
-                                        $DNSLableName = Get-ARMTemplateRandomDNSLabel `
+                                        $DNSLabelName = Get-ARMTemplateRandomDNSLabel `
                                                                 -Length 12 `
                                                                 -ErrorAction Stop
-                                        $ParamFileObj.parameters.($ParameterName).Value[$ValueCount] = $DNSLableName
+                                        $ParamFileObj.parameters.($ParameterName).Value[$ValueCount] = $DNSLabelName
                                         $ParamFileObjChanged = $true
                                         $ValueCount++
                                     }
@@ -2342,16 +2590,16 @@ param (
                                 Else
                                 {
                                     # Set Value
-                                    $DNSLableName = Get-ARMTemplateRandomDNSLabel `
+                                    $DNSLabelName = Get-ARMTemplateRandomDNSLabel `
                                                             -Length 12 `
                                                             -ErrorAction Stop
-                                    $ParamFileObj.parameters.($ParameterName).Value = $DNSLableName
+                                    $ParamFileObj.parameters.($ParameterName).Value = $DNSLabelName
                                     $ParamFileObjChanged = $true
                                 }
                             }
 
                             # Check if there are multiple values
-                            If ($ParamFileObj.parameters.parameters.($ParameterName).Value)
+                            If ($null -ne $ParamFileObj.parameters.parameters.($ParameterName).Value)
                             {
                                 If (($ParamFileObj.parameters.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
                                 {
@@ -2359,10 +2607,10 @@ param (
                                     foreach ($PValue in $ParamFileObj.parameters.parameters.($ParameterName).Value)
                                     {
                                         # Set Value
-                                        $DNSLableName = Get-ARMTemplateRandomDNSLabel `
+                                        $DNSLabelName = Get-ARMTemplateRandomDNSLabel `
                                                                 -Length 12 `
                                                                 -ErrorAction Stop
-                                        $ParamFileObj.parameters.parameters.($ParameterName).Value[$ValueCount] = $DNSLableName
+                                        $ParamFileObj.parameters.parameters.($ParameterName).Value[$ValueCount] = $DNSLabelName
                                         $ParamFileObjChanged = $true
                                         $ValueCount++
                                     }
@@ -2370,10 +2618,10 @@ param (
                                 Else
                                 {
                                     # Set Value
-                                    $DNSLableName = Get-ARMTemplateRandomDNSLabel `
+                                    $DNSLabelName = Get-ARMTemplateRandomDNSLabel `
                                                             -Length 12 `
                                                             -ErrorAction Stop
-                                    $ParamFileObj.parameters.parameters.($ParameterName).Value = $DNSLableName
+                                    $ParamFileObj.parameters.parameters.($ParameterName).Value = $DNSLabelName
                                     $ParamFileObjChanged = $true
                                 }
                             }
@@ -2383,7 +2631,7 @@ param (
                 #endregion
 
                 #region Exact DNS Label Keywords
-                $ExactDNSLabelKeywords = @('publicIPAddressName')
+                $ExactDNSLabelKeywords = @('publicIPAddressName','endpointName')
 
                 # Go trough every keyword
                 foreach ($ExactDNSLabelKeyword in $ExactDNSLabelKeywords)
@@ -2425,14 +2673,18 @@ param (
                     # Go trough every Parameter Name
                     foreach ($ParameterName in $ParameterNames)
                     {
-                        $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $ParameterName  is: ' + $ParameterName 
-                        Write-Verbose `
-                              -Message $VerboseMessage 
-
                         If ($ParameterName -eq $ExactDNSLabelKeyword)
                         {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword exact match: ' + $ExactDNSLabelKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
                             # Check if there are multiple values
-                            If ($ParamFileObj.($ParameterName).Value)
+                            If ($null -ne $ParamFileObj.($ParameterName).Value)
                             {
                                 If (($ParamFileObj.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
                                 {
@@ -2440,10 +2692,10 @@ param (
                                     foreach ($PValue in $ParamFileObj.($ParameterName).Value)
                                     {
                                         # Set Value
-                                        $DNSLableName = Get-ARMTemplateRandomDNSLabel `
+                                        $DNSLabelName = Get-ARMTemplateRandomDNSLabel `
                                                                 -Length 12 `
                                                                 -ErrorAction Stop
-                                        $ParamFileObj.($ParameterName).Value[$ValueCount] = $DNSLableName
+                                        $ParamFileObj.($ParameterName).Value[$ValueCount] = $DNSLabelName
                                         $ParamFileObjChanged = $true
                                         $ValueCount++
                                     }
@@ -2451,16 +2703,16 @@ param (
                                 Else
                                 {
                                     # Set Value
-                                    $DNSLableName = Get-ARMTemplateRandomDNSLabel `
+                                    $DNSLabelName = Get-ARMTemplateRandomDNSLabel `
                                                             -Length 12 `
                                                             -ErrorAction Stop
-                                    $ParamFileObj.($ParameterName).Value = $DNSLableName
+                                    $ParamFileObj.($ParameterName).Value = $DNSLabelName
                                     $ParamFileObjChanged = $true
                                 }
                             }
 
                             # Check if there are multiple values
-                            If ($ParamFileObj.parameters.($ParameterName).Value)
+                            If ($null -ne $ParamFileObj.parameters.($ParameterName).Value)
                             {
                                 If (($ParamFileObj.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
                                 {
@@ -2468,10 +2720,10 @@ param (
                                     foreach ($PValue in $ParamFileObj.parameters.($ParameterName).Value)
                                     {
                                         # Set Value
-                                        $DNSLableName = Get-ARMTemplateRandomDNSLabel `
+                                        $DNSLabelName = Get-ARMTemplateRandomDNSLabel `
                                                                 -Length 12 `
                                                                 -ErrorAction Stop
-                                        $ParamFileObj.parameters.($ParameterName).Value[$ValueCount] = $DNSLableName
+                                        $ParamFileObj.parameters.($ParameterName).Value[$ValueCount] = $DNSLabelName
                                         $ParamFileObjChanged = $true
                                         $ValueCount++
                                     }
@@ -2479,16 +2731,16 @@ param (
                                 Else
                                 {
                                     # Set Value
-                                    $DNSLableName = Get-ARMTemplateRandomDNSLabel `
+                                    $DNSLabelName = Get-ARMTemplateRandomDNSLabel `
                                                             -Length 12 `
                                                             -ErrorAction Stop
-                                    $ParamFileObj.parameters.($ParameterName).Value = $DNSLableName
+                                    $ParamFileObj.parameters.($ParameterName).Value = $DNSLabelName
                                     $ParamFileObjChanged = $true
                                 }
                             }
 
                             # Check if there are multiple values
-                            If ($ParamFileObj.parameters.parameters.($ParameterName).Value)
+                            If ($null -ne $ParamFileObj.parameters.parameters.($ParameterName).Value)
                             {
                                 If (($ParamFileObj.parameters.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
                                 {
@@ -2496,10 +2748,10 @@ param (
                                     foreach ($PValue in $ParamFileObj.parameters.parameters.($ParameterName).Value)
                                     {
                                         # Set Value
-                                        $DNSLableName = Get-ARMTemplateRandomDNSLabel `
+                                        $DNSLabelName = Get-ARMTemplateRandomDNSLabel `
                                                                 -Length 12 `
                                                                 -ErrorAction Stop
-                                        $ParamFileObj.parameters.parameters.($ParameterName).Value[$ValueCount] = $DNSLableName
+                                        $ParamFileObj.parameters.parameters.($ParameterName).Value[$ValueCount] = $DNSLabelName
                                         $ParamFileObjChanged = $true
                                         $ValueCount++
                                     }
@@ -2507,10 +2759,10 @@ param (
                                 Else
                                 {
                                     # Set Value
-                                    $DNSLableName = Get-ARMTemplateRandomDNSLabel `
+                                    $DNSLabelName = Get-ARMTemplateRandomDNSLabel `
                                                             -Length 12 `
                                                             -ErrorAction Stop
-                                    $ParamFileObj.parameters.parameters.($ParameterName).Value = $DNSLableName
+                                    $ParamFileObj.parameters.parameters.($ParameterName).Value = $DNSLabelName
                                     $ParamFileObjChanged = $true
                                 }
                             }
@@ -2529,8 +2781,6 @@ param (
                     -Message $ErrorMessage `
                     -ErrorAction Stop
             }
-            
-        
         }
         #endregion
 
@@ -2582,14 +2832,18 @@ param (
                     # Go trough every Parameter Name
                     foreach ($ParameterName in $ParameterNames)
                     {
-                        $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $ParameterName  is: ' + $ParameterName 
-                        Write-Verbose `
-                              -Message $VerboseMessage 
-
                         If ($ParameterName -match $PasswordKeyword)
                         {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword match: ' + $PasswordKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
                             # Check if there are multiple values
-                            If ($ParamFileObj.($ParameterName).Value)
+                            If ($null -ne $ParamFileObj.($ParameterName).Value)
                             {
                                 If (($ParamFileObj.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
                                 {
@@ -2618,7 +2872,7 @@ param (
                             }
 
                             # Check if there are multiple values
-                            If ($ParamFileObj.parameters.($ParameterName).Value)
+                            If ($null -ne $ParamFileObj.parameters.($ParameterName).Value)
                             {
                                 If (($ParamFileObj.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
                                 {
@@ -2647,7 +2901,7 @@ param (
                             }
 
                             # Check if there are multiple values
-                            If ($ParamFileObj.parameters.parameters.($ParameterName).Value)
+                            If ($null -ne $ParamFileObj.parameters.parameters.($ParameterName).Value)
                             {
                                 If (($ParamFileObj.parameters.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
                                 {
@@ -2689,12 +2943,782 @@ param (
                     -Message $ErrorMessage `
                     -ErrorAction Stop
             }
+        }
+        #endregion
+
+        #region SetType SSHKeyData
+        If ($SetType -eq 'SSHKeyData') 
+        {
+            Try
+            {
+                #region Exact SSH Key Data Keywords
+                $ExactSSHKeyDataKeywords = @('sshKeyData','sshPublicKey')
+
+                # Go trough every keyword
+                foreach ($ExactSSHKeyDataKeyword in $ExactSSHKeyDataKeywords)
+                {
+                    If ($ParamFileObj.parameters)
+                    {
+                        $ParameterNames = $ParamFileObj.parameters | `
+                                            Get-Member `
+                                                -ErrorAction Stop | `
+                                            Where-Object MemberType -EQ NoteProperty `
+                                                -ErrorAction Stop | `
+                                            Select-Object -ExpandProperty Name `
+                                                -ErrorAction Stop
+                    }
+                    Else
+                    {
+                        $ParameterNames = $ParamFileObj | `
+                                            Get-Member `
+                                                -ErrorAction Stop | `
+                                            Where-Object MemberType -EQ NoteProperty `
+                                                -ErrorAction Stop | `
+                                            Select-Object -ExpandProperty Name `
+                                                -ErrorAction Stop
+                    }
+                    
+                    
+                    # Check for double parameters
+                    If ($ParamFileObj.parameters.parameters)
+                    {
+                        $ParameterNames = $ParamFileObj.parameters.parameters | `
+                                            Get-Member `
+                                                -ErrorAction Stop | `
+                                            Where-Object MemberType -EQ NoteProperty `
+                                                -ErrorAction Stop | `
+                                            Select-Object -ExpandProperty Name `
+                                                -ErrorAction Stop
+                    }
+
+                    # Go trough every Parameter Name
+                    foreach ($ParameterName in $ParameterNames)
+                    {
+                        If ($ParameterName -eq $ExactSSHKeyDataKeyword)
+                        {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword exact match: ' + $ExactSSHKeyDataKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.($ParameterName).Value)
+                                    {
+                                        # Set Value
+                                        $SSHPublicKeyString = Get-ARMTemplateSSHPublicKeyData `
+                                                                -ErrorAction Stop
+                                        $ParamFileObj.($ParameterName).Value[$ValueCount] = $SSHPublicKeyString
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    # Set Value
+                                    $SSHPublicKeyString = Get-ARMTemplateSSHPublicKeyData `
+                                                            -ErrorAction Stop
+                                    $ParamFileObj.($ParameterName).Value = $SSHPublicKeyString
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.parameters.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.parameters.($ParameterName).Value)
+                                    {
+                                        # Set Value
+                                        $SSHPublicKeyString = Get-ARMTemplateSSHPublicKeyData `
+                                                                -ErrorAction Stop
+                                        $ParamFileObj.parameters.($ParameterName).Value[$ValueCount] = $SSHPublicKeyString
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    # Set Value
+                                    $SSHPublicKeyString = Get-ARMTemplateSSHPublicKeyData `
+                                                            -ErrorAction Stop
+                                    $ParamFileObj.parameters.($ParameterName).Value = $SSHPublicKeyString
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.parameters.parameters.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.parameters.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.parameters.parameters.($ParameterName).Value)
+                                    {
+                                        # Set Value
+                                        $SSHPublicKeyString = Get-ARMTemplateSSHPublicKeyData `
+                                                                -ErrorAction Stop
+                                        $ParamFileObj.parameters.parameters.($ParameterName).Value[$ValueCount] = $SSHPublicKeyString
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    # Set Value
+                                    $SSHPublicKeyString = Get-ARMTemplateSSHPublicKeyData `
+                                                            -ErrorAction Stop
+                                    $ParamFileObj.parameters.parameters.($ParameterName).Value = $SSHPublicKeyString
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+                        }
+                    }
+                }
+                #endregion
+            }
+            Catch
+            {
+                $ErrorMessage = 'Failed to read file ' + $ARMTemplateParameterFile + ' of type ' + $SetType
+                $ErrorMessage += " `n"
+                $ErrorMessage += 'Error: '
+                $ErrorMessage += $_
+                Write-Error `
+                    -Message $ErrorMessage `
+                    -ErrorAction Stop
+            }
+        }
+        #endregion
+
+        #region SetType VMName
+        If ($SetType -eq 'VMName') 
+        {
+            Try
+            {
+                #region VM Name Keywords
+                $VMNameKeywords = @('vmName','clusterName','vmssName','Servername')
+
+                # Go trough every keyword
+                foreach ($VMNameKeyword in $VMNameKeywords)
+                {
+                    If ($ParamFileObj.parameters)
+                    {
+                        $ParameterNames = $ParamFileObj.parameters | `
+                                            Get-Member `
+                                                -ErrorAction Stop | `
+                                            Where-Object MemberType -EQ NoteProperty `
+                                                -ErrorAction Stop | `
+                                            Select-Object -ExpandProperty Name `
+                                                -ErrorAction Stop
+                    }
+                    Else
+                    {
+                        $ParameterNames = $ParamFileObj | `
+                                            Get-Member `
+                                                -ErrorAction Stop | `
+                                            Where-Object MemberType -EQ NoteProperty `
+                                                -ErrorAction Stop | `
+                                            Select-Object -ExpandProperty Name `
+                                                -ErrorAction Stop
+                    }
+                    
+                    
+                    # Check for double parameters
+                    If ($ParamFileObj.parameters.parameters)
+                    {
+                        $ParameterNames = $ParamFileObj.parameters.parameters | `
+                                            Get-Member `
+                                                -ErrorAction Stop | `
+                                            Where-Object MemberType -EQ NoteProperty `
+                                                -ErrorAction Stop | `
+                                            Select-Object -ExpandProperty Name `
+                                                -ErrorAction Stop
+                    }
+
+                    # Go trough every Parameter Name
+                    foreach ($ParameterName in $ParameterNames)
+                    {
+                        If ($ParameterName -match $VMNameKeyword)
+                        {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword match: ' + $VMNameKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.($ParameterName).Value)
+                                    {
+                                        # Set Value
+                                        $VMName = Get-ARMTemplateRandomVMName `
+                                                                -Length 8 `
+                                                                -ErrorAction Stop
+                                        $ParamFileObj.($ParameterName).Value[$ValueCount] = $VMName
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    # Set Value
+                                    $VMName = Get-ARMTemplateRandomVMName `
+                                                            -Length 8 `
+                                                            -ErrorAction Stop
+                                    $ParamFileObj.($ParameterName).Value = $VMName
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.parameters.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.parameters.($ParameterName).Value)
+                                    {
+                                        # Set Value
+                                        $VMName = Get-ARMTemplateRandomVMName `
+                                                                -Length 8 `
+                                                                -ErrorAction Stop
+                                        $ParamFileObj.parameters.($ParameterName).Value[$ValueCount] = $VMName
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    # Set Value
+                                    $VMName = Get-ARMTemplateRandomVMName `
+                                                            -Length 8 `
+                                                            -ErrorAction Stop
+                                    $ParamFileObj.parameters.($ParameterName).Value = $VMName
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.parameters.parameters.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.parameters.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.parameters.parameters.($ParameterName).Value)
+                                    {
+                                        # Set Value
+                                        $VMName = Get-ARMTemplateRandomVMName `
+                                                                -Length 8 `
+                                                                -ErrorAction Stop
+                                        $ParamFileObj.parameters.parameters.($ParameterName).Value[$ValueCount] = $VMName
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    # Set Value
+                                    $VMName = Get-ARMTemplateRandomVMName `
+                                                            -Length 8 `
+                                                            -ErrorAction Stop
+                                    $ParamFileObj.parameters.parameters.($ParameterName).Value = $VMName
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+                        }
+                    }
+                }
+                #endregion
+
+            }
+            Catch
+            {
+                $ErrorMessage = 'Failed to read file ' + $ARMTemplateParameterFile + ' of type ' + $SetType
+                $ErrorMessage += " `n"
+                $ErrorMessage += 'Error: '
+                $ErrorMessage += $_
+                Write-Error `
+                    -Message $ErrorMessage `
+                    -ErrorAction Stop
+            }
             
         
         }
         #endregion
 
-        
+        #region SetType UserName
+        If ($SetType -eq 'UserName') 
+        {
+            Try
+            {
+                #region User Name Keywords
+                $UserNameKeywords = @('Username','databaseAccountName')
+
+                # Go trough every keyword
+                foreach ($UserNameKeyword in $UserNameKeywords)
+                {
+                    If ($ParamFileObj.parameters)
+                    {
+                        $ParameterNames = $ParamFileObj.parameters | `
+                                            Get-Member `
+                                                -ErrorAction Stop | `
+                                            Where-Object MemberType -EQ NoteProperty `
+                                                -ErrorAction Stop | `
+                                            Select-Object -ExpandProperty Name `
+                                                -ErrorAction Stop
+                    }
+                    Else
+                    {
+                        $ParameterNames = $ParamFileObj | `
+                                            Get-Member `
+                                                -ErrorAction Stop | `
+                                            Where-Object MemberType -EQ NoteProperty `
+                                                -ErrorAction Stop | `
+                                            Select-Object -ExpandProperty Name `
+                                                -ErrorAction Stop
+                    }
+                    
+                    
+                    # Check for double parameters
+                    If ($ParamFileObj.parameters.parameters)
+                    {
+                        $ParameterNames = $ParamFileObj.parameters.parameters | `
+                                            Get-Member `
+                                                -ErrorAction Stop | `
+                                            Where-Object MemberType -EQ NoteProperty `
+                                                -ErrorAction Stop | `
+                                            Select-Object -ExpandProperty Name `
+                                                -ErrorAction Stop
+                    }
+
+                    # Go trough every Parameter Name
+                    foreach ($ParameterName in $ParameterNames)
+                    {
+                        If ($ParameterName -match $UserNameKeyword)
+                        {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword match: ' + $UserNameKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.($ParameterName).Value)
+                                    {
+                                        # Set Value
+                                        $RandomUserName = Get-ARMTemplateRandomUserName `
+                                                                -Length 8 `
+                                                                -ErrorAction Stop
+                                        $ParamFileObj.($ParameterName).Value[$ValueCount] = $RandomUserName
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    # Set Value
+                                    $RandomUserName = Get-ARMTemplateRandomUserName `
+                                                            -Length 8 `
+                                                            -ErrorAction Stop
+                                    $ParamFileObj.($ParameterName).Value = $RandomUserName
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.parameters.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.parameters.($ParameterName).Value)
+                                    {
+                                        # Set Value
+                                        $RandomUserName = Get-ARMTemplateRandomUserName `
+                                                                -Length 8 `
+                                                                -ErrorAction Stop
+                                        $ParamFileObj.parameters.($ParameterName).Value[$ValueCount] = $RandomUserName
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    # Set Value
+                                    $RandomUserName = Get-ARMTemplateRandomUserName `
+                                                            -Length 8 `
+                                                            -ErrorAction Stop
+                                    $ParamFileObj.parameters.($ParameterName).Value = $RandomUserName
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.parameters.parameters.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.parameters.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.parameters.parameters.($ParameterName).Value)
+                                    {
+                                        # Set Value
+                                        $RandomUserName = Get-ARMTemplateRandomUserName `
+                                                                -Length 8 `
+                                                                -ErrorAction Stop
+                                        $ParamFileObj.parameters.parameters.($ParameterName).Value[$ValueCount] = $RandomUserName
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    # Set Value
+                                    $RandomUserName = Get-ARMTemplateRandomUserName `
+                                                            -Length 8 `
+                                                            -ErrorAction Stop
+                                    $ParamFileObj.parameters.parameters.($ParameterName).Value = $RandomUserName
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+                        }
+                    }
+                }
+                #endregion
+
+                #region Exact User Name Keywords
+                $ExactUserNameKeywords = @('administratorLogin')
+
+                # Go trough every keyword
+                foreach ($ExactUserNameKeyword in $ExactUserNameKeywords)
+                {
+                    If ($ParamFileObj.parameters)
+                    {
+                        $ParameterNames = $ParamFileObj.parameters | `
+                                            Get-Member `
+                                                -ErrorAction Stop | `
+                                            Where-Object MemberType -EQ NoteProperty `
+                                                -ErrorAction Stop | `
+                                            Select-Object -ExpandProperty Name `
+                                                -ErrorAction Stop
+                    }
+                    Else
+                    {
+                        $ParameterNames = $ParamFileObj | `
+                                            Get-Member `
+                                                -ErrorAction Stop | `
+                                            Where-Object MemberType -EQ NoteProperty `
+                                                -ErrorAction Stop | `
+                                            Select-Object -ExpandProperty Name `
+                                                -ErrorAction Stop
+                    }
+                    
+                    
+                    # Check for double parameters
+                    If ($ParamFileObj.parameters.parameters)
+                    {
+                        $ParameterNames = $ParamFileObj.parameters.parameters | `
+                                            Get-Member `
+                                                -ErrorAction Stop | `
+                                            Where-Object MemberType -EQ NoteProperty `
+                                                -ErrorAction Stop | `
+                                            Select-Object -ExpandProperty Name `
+                                                -ErrorAction Stop
+                    }
+
+                    # Go trough every Parameter Name
+                    foreach ($ParameterName in $ParameterNames)
+                    {
+                        If ($ParameterName -eq $ExactUserNameKeyword)
+                        {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword exact match: ' + $ExactUserNameKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.($ParameterName).Value)
+                                    {
+                                        # Set Value
+                                        $RandomUserName = Get-ARMTemplateRandomUserName `
+                                                                -Length 8 `
+                                                                -ErrorAction Stop
+                                        $ParamFileObj.($ParameterName).Value[$ValueCount] = $RandomUserName
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    # Set Value
+                                    $RandomUserName = Get-ARMTemplateRandomUserName `
+                                                            -Length 8 `
+                                                            -ErrorAction Stop
+                                    $ParamFileObj.($ParameterName).Value = $RandomUserName
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.parameters.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.parameters.($ParameterName).Value)
+                                    {
+                                        # Set Value
+                                        $RandomUserName = Get-ARMTemplateRandomUserName `
+                                                                -Length 8 `
+                                                                -ErrorAction Stop
+                                        $ParamFileObj.parameters.($ParameterName).Value[$ValueCount] = $RandomUserName
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    # Set Value
+                                    $RandomUserName = Get-ARMTemplateRandomUserName `
+                                                            -Length 8 `
+                                                            -ErrorAction Stop
+                                    $ParamFileObj.parameters.($ParameterName).Value = $RandomUserName
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.parameters.parameters.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.parameters.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.parameters.parameters.($ParameterName).Value)
+                                    {
+                                        # Set Value
+                                        $RandomUserName = Get-ARMTemplateRandomUserName `
+                                                                -Length 8 `
+                                                                -ErrorAction Stop
+                                        $ParamFileObj.parameters.parameters.($ParameterName).Value[$ValueCount] = $RandomUserName
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    # Set Value
+                                    $RandomUserName = Get-ARMTemplateRandomUserName `
+                                                            -Length 8 `
+                                                            -ErrorAction Stop
+                                    $ParamFileObj.parameters.parameters.($ParameterName).Value = $RandomUserName
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+                        }
+                    }
+                }
+                #endregion
+            }
+            Catch
+            {
+                $ErrorMessage = 'Failed to read file ' + $ARMTemplateParameterFile + ' of type ' + $SetType
+                $ErrorMessage += " `n"
+                $ErrorMessage += 'Error: '
+                $ErrorMessage += $_
+                Write-Error `
+                    -Message $ErrorMessage `
+                    -ErrorAction Stop
+            }
+        }
+        #endregion
+
+        #region SetType AppName
+        If ($SetType -eq 'AppName') 
+        {
+            Try
+            {
+                #region App Name Keywords
+                $AppNameKeywords = @('AppName','PlanName')
+
+                # Go trough every keyword
+                foreach ($AppNameKeyword in $AppNameKeywords)
+                {
+                    If ($ParamFileObj.parameters)
+                    {
+                        $ParameterNames = $ParamFileObj.parameters | `
+                                            Get-Member `
+                                                -ErrorAction Stop | `
+                                            Where-Object MemberType -EQ NoteProperty `
+                                                -ErrorAction Stop | `
+                                            Select-Object -ExpandProperty Name `
+                                                -ErrorAction Stop
+                    }
+                    Else
+                    {
+                        $ParameterNames = $ParamFileObj | `
+                                            Get-Member `
+                                                -ErrorAction Stop | `
+                                            Where-Object MemberType -EQ NoteProperty `
+                                                -ErrorAction Stop | `
+                                            Select-Object -ExpandProperty Name `
+                                                -ErrorAction Stop
+                    }
+                    
+                    
+                    # Check for double parameters
+                    If ($ParamFileObj.parameters.parameters)
+                    {
+                        $ParameterNames = $ParamFileObj.parameters.parameters | `
+                                            Get-Member `
+                                                -ErrorAction Stop | `
+                                            Where-Object MemberType -EQ NoteProperty `
+                                                -ErrorAction Stop | `
+                                            Select-Object -ExpandProperty Name `
+                                                -ErrorAction Stop
+                    }
+
+                    # Go trough every Parameter Name
+                    foreach ($ParameterName in $ParameterNames)
+                    {
+                        If ($ParameterName -match $AppNameKeyword)
+                        {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword match: ' + $AppNameKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.($ParameterName).Value)
+                                    {
+                                        # Set Value
+                                        $RandomAppName = Get-ARMTemplateRandomAppName `
+                                                                -Length 8 `
+                                                                -ErrorAction Stop
+                                        $ParamFileObj.($ParameterName).Value[$ValueCount] = $RandomAppName
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    # Set Value
+                                    $RandomAppName = Get-ARMTemplateRandomAppName `
+                                                            -Length 8 `
+                                                            -ErrorAction Stop
+                                    $ParamFileObj.($ParameterName).Value = $RandomAppName
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.parameters.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.parameters.($ParameterName).Value)
+                                    {
+                                        # Set Value
+                                        $RandomAppName = Get-ARMTemplateRandomAppName `
+                                                                -Length 8 `
+                                                                -ErrorAction Stop
+                                        $ParamFileObj.parameters.($ParameterName).Value[$ValueCount] = $RandomAppName
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    # Set Value
+                                    $RandomAppName = Get-ARMTemplateRandomAppName `
+                                                            -Length 8 `
+                                                            -ErrorAction Stop
+                                    $ParamFileObj.parameters.($ParameterName).Value = $RandomAppName
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.parameters.parameters.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.parameters.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.parameters.parameters.($ParameterName).Value)
+                                    {
+                                        # Set Value
+                                        $RandomAppName = Get-ARMTemplateRandomAppName `
+                                                                -Length 8 `
+                                                                -ErrorAction Stop
+                                        $ParamFileObj.parameters.parameters.($ParameterName).Value[$ValueCount] = $RandomAppName
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    # Set Value
+                                    $RandomAppName = Get-ARMTemplateRandomAppName `
+                                                            -Length 8 `
+                                                            -ErrorAction Stop
+                                    $ParamFileObj.parameters.parameters.($ParameterName).Value = $RandomAppName
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+                        }
+                    }
+                }
+                #endregion
+            }
+            Catch
+            {
+                $ErrorMessage = 'Failed to read file ' + $ARMTemplateParameterFile + ' of type ' + $SetType
+                $ErrorMessage += " `n"
+                $ErrorMessage += 'Error: '
+                $ErrorMessage += $_
+                Write-Error `
+                    -Message $ErrorMessage `
+                    -ErrorAction Stop
+            }
+        }
+        #endregion
+ 
     }
     Catch
     {
@@ -2725,7 +3749,7 @@ param (
                         -ErrorAction Stop | `
                     Out-File `
                         -FilePath $NewARMTemplateParamFilePath `
-                        -Encoding unicode `
+                        -Encoding utf8 `
                         -Force `
                         -ErrorAction Stop
             }
@@ -2762,15 +3786,17 @@ Function Set-ARMTemplateFile {
 
     .SYNOPSIS
         Changes location, StorageAccountName,
-        StorageAccountNamePrefix, DNSLabelparameter or
-        Password  in ARM Template json file. Adds it to 
-        allowedValues and sets it in the defatulValue.
+        StorageAccountNamePrefix, DNSLabel,
+        Password, SSHKeyData, VMName, UserName or AppName
+        parameter in ARM Template json file. Adds it to 
+        allowedValues and sets it in  the defatulValue.
 
     .DESCRIPTION
         Changes location, StorageAccountName,
-        StorageAccountNamePrefix, DNSLabelparameter or
-        Password  in ARM Template json file. Adds it to 
-        allowedValues and sets it in the defatulValue.
+        StorageAccountNamePrefix, DNSLabel,
+        Password, SSHKeyData, VMName, UserName or AppName
+        parameter in ARM Template json file. Adds it to 
+        allowedValues and sets it in  the defatulValue.
 
     .PARAMETER  ARMTemplateFile
         Location to azuredeploy.json file.
@@ -2804,15 +3830,40 @@ Function Set-ARMTemplateFile {
         searchs paramteres with names that match 
         the words 'dnsLabel', 'dnsName', 'DnsPrefix'
         or 'PublicIPName'. Will also search for exact 
-        parameter named 'publicIPAddressName'.
-        When found the value for those paramaters 
-        will be replace with random string of 12
-        characters.
+        parameter named 'publicIPAddressName' or
+        'endpointName'. When found the value for 
+        those paramaters will be replace with random 
+        string of 12 characters.
         If value Password is chosen  the function 
         searchs paramteres with names that match 
         the word 'Password'. When found the value 
         for those paramaters will be replace with 
         random complex password of 10 characters.
+        If value SSHKeyData is chosen  the function 
+        searchs paramteres with names that match 
+        the exact words 'sshPublicKey' and 'sshKeyData'. 
+        When found the value for those paramaters will 
+        be replace with valid SSH RSA Public Key string.
+        If value VMName is chosen  the function 
+        searchs paramteres with names that match 
+        the words 'vmName', 'clusterName', 'ServerName'
+        and 'vmssName'. When found the value 
+        for those paramaters will be replace with 
+        random string of 8 characters that are only
+        small letters.
+        If value UserName is chosen  the function 
+        searchs paramteres with names that match 
+        the word 'Username' or 'databaseAccountName'. 
+        Will also search for parameter exactly named 
+        'administratorLogin'. When found the value 
+        for those paramaters will be replace with 
+        random string of 8 characters that starts 
+        with user prefix.
+        If value AppName is chosen  the function 
+        searchs paramteres with names that match 
+        the word 'AppName' or 'PlanName'. When 
+        found the value for those paramaters will 
+        be replace with random string of 8 characters.
 
     .PARAMETER  CreateDefaultValue
         Switch parameter. If the parameter is used and
@@ -2830,6 +3881,49 @@ Function Set-ARMTemplateFile {
         -----------
         Find parameter of type 'Location' in ARM Template file, add it to allowedValues and replace/create defaultValue for
         that parameter with 'North Europe'
+
+        Example Variables
+        -----------------
+        $path = 'D:\ARMTEST\Downloaded\101-application-gateway-create\azuredeploy.json'
+
+    .EXAMPLE
+        Set-ARMTemplateParameterFile -ARMTemplateFile $path -SetType 'SSHKeyData' -CreateDefaultValue
+        Description
+        -----------
+        Find parameter of type 'SSHKeyData' in ARM Template file, add it to allowedValues and replace/create defaultValue for
+        that parameter with valid SSH Public Key
+
+        Example Variables
+        -----------------
+        $path = 'D:\ARMTEST\Downloaded\101-application-gateway-create\azuredeploy.json'
+
+    .EXAMPLE
+        Set-ARMTemplateParameterFile -ARMTemplateFile $path -SetType 'AppName' -CreateDefaultValue
+        Description
+        -----------
+        Find parameter of type 'AppName' in ARM Template file, add it to allowedValues and replace/create defaultValue for
+        that parameter with 8 character string
+
+        Example Variables
+        -----------------
+        $path = 'D:\ARMTEST\Downloaded\101-application-gateway-create\azuredeploy.json'
+    .EXAMPLE
+        Set-ARMTemplateParameterFile -ARMTemplateFile $path -SetType 'UserName' -CreateDefaultValue
+        Description
+        -----------
+        Find parameter of type 'UserName' in ARM Template file, add it to allowedValues and replace/create defaultValue for
+        that parameter with random 8 character string that starts with user prefix.
+
+        Example Variables
+        -----------------
+        $path = 'D:\ARMTEST\Downloaded\101-application-gateway-create\azuredeploy.json'
+
+    .EXAMPLE
+        Set-ARMTemplateParameterFile -ARMTemplateFile $path -SetType 'VMName' -CreateDefaultValue
+        Description
+        -----------
+        Find parameter of type 'VMName' in ARM Template file, add it to allowedValues and replace/create defaultValue for
+        that parameter with 8 character string of small letters
 
         Example Variables
         -----------------
@@ -2934,7 +4028,7 @@ param (
         $ARMTemplateFile,
 
         [Parameter(ParameterSetName='DefaultParameterSet',Position=1,Mandatory=$true)]
-        [ValidateSet('Location','StorageAccountName','StorageAccountNamePrefix','DNSLabel','Password')]
+        [ValidateSet('Location','StorageAccountName','StorageAccountNamePrefix','DNSLabel','Password','SSHKeyData','VMName','UserName','AppName')]
         [string]
         $SetType,
 
@@ -2988,9 +4082,6 @@ param (
                            ConvertFrom-Json `
                             -ErrorAction Stop
 
-        
-        
-
         #region SetType Location
         If ($SetType -eq 'Location') 
         {
@@ -3014,12 +4105,16 @@ param (
                     # Go trough every Parameter Name
                     foreach ($ParameterName in $ParameterNames)
                     {
-                        $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $ParameterName  is: ' + $ParameterName 
-                        Write-Verbose `
-                              -Message $VerboseMessage 
-
                         If ($ParameterName -match $LocationKeyword)
                         {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword match: ' + $LocationKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
                             # Check if there are multiple values
                             If ($TemplateFileObj.parameters.($ParameterName).allowedValues)
                             {
@@ -3085,8 +4180,6 @@ param (
                     -Message $ErrorMessage `
                     -ErrorAction Stop
             }
-            
-        
         }
         #endregion
 
@@ -3112,12 +4205,16 @@ param (
                     # Go trough every Parameter Name
                     foreach ($ParameterName in $ParameterNames)
                     {
-                        $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $ParameterName  is: ' + $ParameterName 
-                        Write-Verbose `
-                              -Message $VerboseMessage 
-
                         If ($ParameterName -match $StorageAccountNameKeyword)
                         {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword match: ' + $StorageAccountNameKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
                             # Check for defaultValue
                             If ($TemplateFileObj.parameters.($ParameterName).defaultValue)
                             {
@@ -3167,12 +4264,16 @@ param (
                     # Go trough every Parameter Name
                     foreach ($ParameterName in $ParameterNames)
                     {
-                        $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $ParameterName  is: ' + $ParameterName 
-                        Write-Verbose `
-                              -Message $VerboseMessage 
-
                         If ($ParameterName -eq $ExactStorageAccountNameKeyword)
                         {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword exact match: ' + $ExactStorageAccountNameKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
                             # Check for defaultValue
                             If ($TemplateFileObj.parameters.($ParameterName).defaultValue)
                             {
@@ -3215,8 +4316,6 @@ param (
                     -Message $ErrorMessage `
                     -ErrorAction Stop
             }
-            
-        
         }
         #endregion
 
@@ -3242,12 +4341,16 @@ param (
                     # Go trough every Parameter Name
                     foreach ($ParameterName in $ParameterNames)
                     {
-                        $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $ParameterName  is: ' + $ParameterName 
-                        Write-Verbose `
-                              -Message $VerboseMessage 
-
                         If ($ParameterName -match $StorageAccountNamePrefixKeyword)
                         {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword match: ' + $StorageAccountNamePrefixKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
                             # Check for defaultValue
                             If ($TemplateFileObj.parameters.($ParameterName).defaultValue)
                             {
@@ -3297,12 +4400,16 @@ param (
                     # Go trough every Parameter Name
                     foreach ($ParameterName in $ParameterNames)
                     {
-                        $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $ParameterName  is: ' + $ParameterName 
-                        Write-Verbose `
-                              -Message $VerboseMessage 
-
                         If ($ParameterName -eq $ExactStorageAccountNamePrefixKeyword)
                         {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword exact match: ' + $ExactStorageAccountNamePrefixKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
                             # Check for defaultValue
                             If ($TemplateFileObj.parameters.($ParameterName).defaultValue)
                             {
@@ -3345,8 +4452,6 @@ param (
                     -Message $ErrorMessage `
                     -ErrorAction Stop
             }
-            
-        
         }
         #endregion
 
@@ -3372,12 +4477,16 @@ param (
                     # Go trough every Parameter Name
                     foreach ($ParameterName in $ParameterNames)
                     {
-                        $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $ParameterName  is: ' + $ParameterName 
-                        Write-Verbose `
-                              -Message $VerboseMessage 
-
                         If ($ParameterName -match $DNSLabelKeyword)
                         {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword match: ' + $DNSLabelKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
                             # Check for defaultValue
                             If ($TemplateFileObj.parameters.($ParameterName).defaultValue)
                             {
@@ -3411,7 +4520,7 @@ param (
                 #endregion
 
                 #region Exact DNS Label Keywords
-                $ExactDNSLabelKeywords = @('publicIPAddressName')
+                $ExactDNSLabelKeywords = @('publicIPAddressName','endpointName')
 
                 # Go trough every keyword
                 foreach ($ExactDNSLabelKeyword in $ExactDNSLabelKeywords)
@@ -3427,12 +4536,16 @@ param (
                     # Go trough every Parameter Name
                     foreach ($ParameterName in $ParameterNames)
                     {
-                        $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $ParameterName  is: ' + $ParameterName 
-                        Write-Verbose `
-                              -Message $VerboseMessage 
-
                         If ($ParameterName -eq $ExactDNSLabelKeyword)
                         {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword exact match: ' + $ExactDNSLabelKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
                             # Check for defaultValue
                             If ($TemplateFileObj.parameters.($ParameterName).defaultValue)
                             {
@@ -3475,8 +4588,6 @@ param (
                     -Message $ErrorMessage `
                     -ErrorAction Stop
             }
-            
-        
         }
         #endregion
 
@@ -3502,12 +4613,16 @@ param (
                     # Go trough every Parameter Name
                     foreach ($ParameterName in $ParameterNames)
                     {
-                        $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $ParameterName  is: ' + $ParameterName 
-                        Write-Verbose `
-                              -Message $VerboseMessage 
-
                         If ($ParameterName -match $PasswordKeyword)
                         {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword match: ' + $PasswordKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
                             # Check for defaultValue
                             If ($TemplateFileObj.parameters.($ParameterName).defaultValue)
                             {
@@ -3539,7 +4654,6 @@ param (
                     }
                 }
                 #endregion
-
             }
             Catch
             {
@@ -3551,8 +4665,371 @@ param (
                     -Message $ErrorMessage `
                     -ErrorAction Stop
             }
-            
-        
+        }
+        #endregion
+
+        #region SetType SSHKeyData
+        If ($SetType -eq 'SSHKeyData') 
+        {
+            Try
+            {
+                #region Exact SSH Key Data Keywords
+                $ExactSSHKeyDataKeywords = @('sshKeyData','sshPublicKey')
+
+                # Go trough every keyword
+                foreach ($ExactSSHKeyDataKeyword in $ExactSSHKeyDataKeywords)
+                {
+                    $ParameterNames = $TemplateFileObj.parameters | `
+                                        Get-Member `
+                                            -ErrorAction Stop | `
+                                        Where-Object MemberType -EQ NoteProperty `
+                                            -ErrorAction Stop | `
+                                        Select-Object -ExpandProperty Name `
+                                            -ErrorAction Stop
+
+                    # Go trough every Parameter Name
+                    foreach ($ParameterName in $ParameterNames)
+                    {
+                        If ($ParameterName -eq $ExactSSHKeyDataKeyword)
+                        {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword exact match: ' + $ExactSSHKeyDataKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
+                            # Check for defaultValue
+                            If ($TemplateFileObj.parameters.($ParameterName).defaultValue)
+                            {
+                                # Set Value
+                                $SSHKeyDataString = Get-ARMTemplateSSHPublicKeyData `
+                                                        -ErrorAction Stop
+                                $TemplateFileObj.parameters.($ParameterName).defaultValue = $SSHKeyDataString
+                                $TemplateFileObjChanged = $true
+                            }
+                            Else
+                            {
+                                # Create defaultValue
+                                If ($CreateDefaultValue -eq $true)
+                                {
+                                    # Set Value
+                                    $SSHKeyDataString = Get-ARMTemplateSSHPublicKeyData `
+                                                            -ErrorAction Stop
+                                    $TemplateFileObj.parameters.($ParameterName) | Add-Member `
+                                                                                    -MemberType NoteProperty `
+                                                                                    -Name defaultValue `
+                                                                                    -Value $SSHKeyDataString `
+                                                                                    -ErrorAction Stop | Out-Null
+                                    $TemplateFileObjChanged = $true
+                                }
+                            }
+                        }
+                    }
+                }
+                #endregion
+            }
+            Catch
+            {
+                $ErrorMessage = 'Failed to read file ' + $ARMTemplateFile + ' of type ' + $SetType
+                $ErrorMessage += " `n"
+                $ErrorMessage += 'Error: '
+                $ErrorMessage += $_
+                Write-Error `
+                    -Message $ErrorMessage `
+                    -ErrorAction Stop
+            }
+        }
+        #endregion
+
+        #region SetType VMName
+        If ($SetType -eq 'VMName') 
+        {
+            Try
+            {
+                #region VM Name Keywords
+                $VMNameKeywords = @('vmName','clusterName','vmssName','Servername')
+
+                # Go trough every keyword
+                foreach ($VMNameKeyword in $VMNameKeywords)
+                {
+                    $ParameterNames = $TemplateFileObj.parameters | `
+                                        Get-Member `
+                                            -ErrorAction Stop | `
+                                        Where-Object MemberType -EQ NoteProperty `
+                                            -ErrorAction Stop | `
+                                        Select-Object -ExpandProperty Name `
+                                            -ErrorAction Stop
+
+                    # Go trough every Parameter Name
+                    foreach ($ParameterName in $ParameterNames)
+                    {
+                        If ($ParameterName -match $VMNameKeyword)
+                        {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword match: ' + $VMNameKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
+                            # Check for defaultValue
+                            If ($TemplateFileObj.parameters.($ParameterName).defaultValue)
+                            {
+                                # Set Value
+                                $VMName = Get-ARMTemplateRandomVMName  `
+                                                        -Length 8 `
+                                                        -ErrorAction Stop
+                                $TemplateFileObj.parameters.($ParameterName).defaultValue = $VMName
+                                $TemplateFileObjChanged = $true
+                            }
+                            Else
+                            {
+                                # Create defaultValue
+                                If ($CreateDefaultValue -eq $true)
+                                {
+                                    # Set Value
+                                    $VMName = Get-ARMTemplateRandomVMName  `
+                                                            -Length 8 `
+                                                            -ErrorAction Stop
+                                    $TemplateFileObj.parameters.($ParameterName) | Add-Member `
+                                                                                    -MemberType NoteProperty `
+                                                                                    -Name defaultValue `
+                                                                                    -Value $VMName `
+                                                                                    -ErrorAction Stop | Out-Null
+                                    $TemplateFileObjChanged = $true
+                                }
+                            }
+                        }
+                    }
+                }
+                #endregion
+            }
+            Catch
+            {
+                $ErrorMessage = 'Failed to read file ' + $ARMTemplateFile + ' of type ' + $SetType
+                $ErrorMessage += " `n"
+                $ErrorMessage += 'Error: '
+                $ErrorMessage += $_
+                Write-Error `
+                    -Message $ErrorMessage `
+                    -ErrorAction Stop
+            }
+        }
+        #endregion
+
+        #region SetType UserName
+        If ($SetType -eq 'UserName') 
+        {
+            Try
+            {
+                #region User Name Keywords
+                $UserNameKeywords = @('Username','databaseAccountName')
+
+                # Go trough every keyword
+                foreach ($UserNameKeyword in $UserNameKeywords)
+                {
+                    $ParameterNames = $TemplateFileObj.parameters | `
+                                        Get-Member `
+                                            -ErrorAction Stop | `
+                                        Where-Object MemberType -EQ NoteProperty `
+                                            -ErrorAction Stop | `
+                                        Select-Object -ExpandProperty Name `
+                                            -ErrorAction Stop
+                    
+                    # Go trough every Parameter Name
+                    foreach ($ParameterName in $ParameterNames)
+                    {
+                        If ($ParameterName -match $UserNameKeyword)
+                        {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword match: ' + $UserNameKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
+                            # Check for defaultValue
+                            If ($TemplateFileObj.parameters.($ParameterName).defaultValue)
+                            {
+                                # Set Value
+                                $RandomUserName = Get-ARMTemplateRandomUserName `
+                                                        -Length 8 `
+                                                        -ErrorAction Stop
+                                $TemplateFileObj.parameters.($ParameterName).defaultValue = $RandomUserName
+                                $TemplateFileObjChanged = $true
+                            }
+                            Else
+                            {
+                                # Create defaultValue
+                                If ($CreateDefaultValue -eq $true)
+                                {
+                                    # Set Value
+                                    $RandomUserName = Get-ARMTemplateRandomUserName `
+                                                            -Length 8 `
+                                                            -ErrorAction Stop
+                                    $TemplateFileObj.parameters.($ParameterName) | Add-Member `
+                                                                                    -MemberType NoteProperty `
+                                                                                    -Name defaultValue `
+                                                                                    -Value $RandomUserName `
+                                                                                    -ErrorAction Stop | Out-Null
+                                    $TemplateFileObjChanged = $true
+                                }
+                            }
+                        }
+                    }
+                }
+                #endregion
+
+                #region Exact User Name Keywords
+                $ExactUserNameKeywords = @('administratorLogin')
+
+                # Go trough every keyword
+                foreach ($ExactUserNameKeyword in $ExactUserNameKeywords)
+                {
+                    $ParameterNames = $TemplateFileObj.parameters | `
+                                        Get-Member `
+                                            -ErrorAction Stop | `
+                                        Where-Object MemberType -EQ NoteProperty `
+                                            -ErrorAction Stop | `
+                                        Select-Object -ExpandProperty Name `
+                                            -ErrorAction Stop
+
+                    # Go trough every Parameter Name
+                    foreach ($ParameterName in $ParameterNames)
+                    {
+                        If ($ParameterName -eq $ExactUserNameKeyword)
+                        {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword exact match: ' + $ExactUserNameKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
+                            # Check for defaultValue
+                            If ($TemplateFileObj.parameters.($ParameterName).defaultValue)
+                            {
+                                # Set Value
+                                $RandomUserName = Get-ARMTemplateRandomUserName  `
+                                                        -Length 8 `
+                                                        -ErrorAction Stop
+                                $TemplateFileObj.parameters.($ParameterName).defaultValue = $RandomUserName
+                                $TemplateFileObjChanged = $true
+                            }
+                            Else
+                            {
+                                # Create defaultValue
+                                If ($CreateDefaultValue -eq $true)
+                                {
+                                    # Set Value
+                                    $RandomUserName = Get-ARMTemplateRandomUserName  `
+                                                            -Length 8 `
+                                                            -ErrorAction Stop
+                                    $TemplateFileObj.parameters.($ParameterName) | Add-Member `
+                                                                                    -MemberType NoteProperty `
+                                                                                    -Name defaultValue `
+                                                                                    -Value $RandomUserName `
+                                                                                    -ErrorAction Stop | Out-Null
+                                    $TemplateFileObjChanged = $true
+                                }
+                            }
+                        }
+                    }
+                }
+                #endregion
+            }
+            Catch
+            {
+                $ErrorMessage = 'Failed to read file ' + $ARMTemplateFile + ' of type ' + $SetType
+                $ErrorMessage += " `n"
+                $ErrorMessage += 'Error: '
+                $ErrorMessage += $_
+                Write-Error `
+                    -Message $ErrorMessage `
+                    -ErrorAction Stop
+            }
+        }
+        #endregion
+
+        #region SetType AppName
+        If ($SetType -eq 'AppName') 
+        {
+            Try
+            {
+                #region App Name Keywords
+                $AppNameKeywords = @('AppName','PlanName')
+
+                # Go trough every keyword
+                foreach ($AppNameKeyword in $AppNameKeywords)
+                {
+                    $ParameterNames = $TemplateFileObj.parameters | `
+                                        Get-Member `
+                                            -ErrorAction Stop | `
+                                        Where-Object MemberType -EQ NoteProperty `
+                                            -ErrorAction Stop | `
+                                        Select-Object -ExpandProperty Name `
+                                            -ErrorAction Stop
+                    
+                    # Go trough every Parameter Name
+                    foreach ($ParameterName in $ParameterNames)
+                    {
+                        If ($ParameterName -match $AppNameKeyword)
+                        {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword match: ' + $AppNameKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
+                            # Check for defaultValue
+                            If ($TemplateFileObj.parameters.($ParameterName).defaultValue)
+                            {
+                                # Set Value
+                                $RandomAppName = Get-ARMTemplateRandomAppName `
+                                                        -Length 8 `
+                                                        -ErrorAction Stop
+                                $TemplateFileObj.parameters.($ParameterName).defaultValue = $RandomAppName
+                                $TemplateFileObjChanged = $true
+                            }
+                            Else
+                            {
+                                # Create defaultValue
+                                If ($CreateDefaultValue -eq $true)
+                                {
+                                    # Set Value
+                                    $RandomAppName = Get-ARMTemplateRandomAppName `
+                                                            -Length 8 `
+                                                            -ErrorAction Stop
+                                    $TemplateFileObj.parameters.($ParameterName) | Add-Member `
+                                                                                    -MemberType NoteProperty `
+                                                                                    -Name defaultValue `
+                                                                                    -Value $RandomAppName `
+                                                                                    -ErrorAction Stop | Out-Null
+                                    $TemplateFileObjChanged = $true
+                                }
+                            }
+                        }
+                    }
+                }
+                #endregion
+            }
+            Catch
+            {
+                $ErrorMessage = 'Failed to read file ' + $ARMTemplateFile + ' of type ' + $SetType
+                $ErrorMessage += " `n"
+                $ErrorMessage += 'Error: '
+                $ErrorMessage += $_
+                Write-Error `
+                    -Message $ErrorMessage `
+                    -ErrorAction Stop
+            }
         }
         #endregion
 
@@ -3579,6 +5056,7 @@ param (
             }
             If ($PSCmdlet.ShouldProcess("Saving $NewARMTemplateFilePath file.")) 
             {
+                
                 # Convert log to JSON and write it into file
                 $TemplateFileObj | `
                     ConvertTo-Json `
@@ -3586,7 +5064,7 @@ param (
                         -ErrorAction Stop | `
                     Out-File `
                         -FilePath $NewARMTemplateFilePath `
-                        -Encoding unicode `
+                        -Encoding utf8 `
                         -Force `
                         -ErrorAction Stop
             }
@@ -3630,9 +5108,7 @@ Function New-ARMTemplateDeployment {
         Deploys Azure Resource Group with the name of the 
         ARM Template. Deploys ARM Template from azuredeploy.json 
         and azuredeploy.parameters.json. Writes Success and
-        Failed results to log files. Moves the successful
-        ARM templates to Successful folder and Failed templates
-        to Queued folder. Deletes the Azure Resource Group.
+        Failed results to log files. Outputs results
 
     .PARAMETER  AzureRegion
         Mandatory parameter. Valid name for Azure Region.
@@ -3694,8 +5170,32 @@ Function New-ARMTemplateDeployment {
         azuredeploy.json and azuredeploy.parameters.json 
         files and change it if found.
 
+    .PARAMETER  ChangeSSHKeyDataParameterValue
+        Optional parameter. If used will 
+        search for SSH Key Data parameter in 
+        azuredeploy.json and azuredeploy.parameters.json 
+        files and change it if found.
+
+    .PARAMETER  ChangeVMNameParameterValue
+        Optional parameter. If used will 
+        search for VM Name parameter in 
+        azuredeploy.json and azuredeploy.parameters.json 
+        files and change it if found.
+
+    .PARAMETER  ChangeUsrNameParameterValue
+        Optional parameter. If used will 
+        search for User Name parameter in 
+        azuredeploy.json and azuredeploy.parameters.json 
+        files and change it if found.
+
+    .PARAMETER  ChangeAppNameParameterValue
+        Optional parameter. If used will 
+        search for App Name parameter in 
+        azuredeploy.json and azuredeploy.parameters.json 
+        files and change it if found.
+
     .EXAMPLE
-        New-ARMTemplateDeployment -AzureRegion 'North Europe' -ARMTemplatesPath $ARMTempaltesPath -OutputPath $OutputPath -AzureSubscriptionID $SubID -AzureCredentials $cred -ChangeLocationParameterValue -ChangeStorageAccountNameParameterValue -ChangeStorageAccountNamePrefixParameterValue -ChangeDNSLabelParameterValue -ChangePasswordParameterValue
+        New-ARMTemplateDeployment -AzureRegion 'North Europe' -ARMTemplatesPath $ARMTempaltesPath -OutputPath $OutputPath -AzureSubscriptionID $SubID -AzureCredentials $cred -ChangeLocationParameterValue -ChangeStorageAccountNameParameterValue -ChangeStorageAccountNamePrefixParameterValue -ChangeDNSLabelParameterValue -ChangePasswordParameterValue -ChangeSSHKeyDataParameterValue -ChangeVMNameParameterValue -ChangeUsrNameParameterValue -ChangeAppNameParameterValue
         Description
         -----------
         New ARM Template Deployment by loggin with Subscription ID
@@ -3704,6 +5204,10 @@ Function New-ARMTemplateDeployment {
         Changes Storage Account Name Prefix parameter in azuredeploy.json and azuredeploy.parameters.json files
         Changes DNS Label parameter in azuredeploy.json and azuredeploy.parameters.json files
         Changes Password parameter in azuredeploy.json and azuredeploy.parameters.json files
+        Changes SSH Key Data parameter in azuredeploy.json and azuredeploy.parameters.json files
+        Changes VM Name parameter in azuredeploy.json and azuredeploy.parameters.json files
+        Changes User Name parameter in azuredeploy.json and azuredeploy.parameters.json files
+        Changes App Name parameter in azuredeploy.json and azuredeploy.parameters.json files
         All temlplates from D:\ARMTEST\ will be deployed one by one.
         
 
@@ -3961,7 +5465,27 @@ param (
         [Parameter(ParameterSetName='LoginBySubscriptionID',Position=10,Mandatory=$false)]
         [Parameter(ParameterSetName='LoginByTenantID',Position=10,Mandatory=$false)]
         [switch]
-        $ChangePasswordParameterValue=$false
+        $ChangePasswordParameterValue=$false,
+
+        [Parameter(ParameterSetName='LoginBySubscriptionID',Position=11,Mandatory=$false)]
+        [Parameter(ParameterSetName='LoginByTenantID',Position=11,Mandatory=$false)]
+        [switch]
+        $ChangeSSHKeyDataParameterValue=$false,
+
+        [Parameter(ParameterSetName='LoginBySubscriptionID',Position=12,Mandatory=$false)]
+        [Parameter(ParameterSetName='LoginByTenantID',Position=12,Mandatory=$false)]
+        [switch]
+        $ChangeVMNameParameterValue=$false,
+
+        [Parameter(ParameterSetName='LoginBySubscriptionID',Position=13,Mandatory=$false)]
+        [Parameter(ParameterSetName='LoginByTenantID',Position=13,Mandatory=$false)]
+        [switch]
+        $ChangeUsrNameParameterValue=$false,
+
+        [Parameter(ParameterSetName='LoginBySubscriptionID',Position=14,Mandatory=$false)]
+        [Parameter(ParameterSetName='LoginByTenantID',Position=14,Mandatory=$false)]
+        [switch]
+        $ChangeAppNameParameterValue=$false
         )
     
     #region Initiial Setup
@@ -3977,17 +5501,13 @@ param (
     $ARMTemplateInvalid = 0
     $ARMTemplateBadError = 0
 
-
     $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $azuredeployFileName is: ' + $azuredeployFileName
     Write-Verbose `
          -Message $VerboseMessage 
 
-
-
     $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $azuredeployParametersFileName is: ' + $azuredeployParametersFileName
     Write-Verbose `
          -Message $VerboseMessage 
-
     
     # If $ARMTemplateName parameter is not specified
     If ($null -eq $ARMTemplateName)
@@ -4008,576 +5528,621 @@ param (
     # Iterate trough every ARM template name
     foreach ($ARMTemplateFolderName in $ARMTemplateName)
     {
+        #region Construct variables
+        # Construct the full path to the ARM Template
+        $ARMTemplateFolder = $ARMTemplatesPath.TrimEnd('\') + '\' + $ARMTemplateFolderName
         
-       #region Construct variables
-       # Construct the full path to the ARM Template
-       $ARMTemplateFolder = $ARMTemplatesPath.TrimEnd('\') + '\' + $ARMTemplateFolderName
+        
+        $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $ARMTemplateFolder is : ' + $ARMTemplateFolder
+        Write-Verbose `
+             -Message $VerboseMessage 
+        
+        
+        # Construct path to azuredeploy.json in the ARM template
+        $azuredeployLocation = $ARMTemplateFolder + '\' + $azuredeployFileName 
+        
+        
+        $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $azuredeployLocation is : ' + $azuredeployLocation
+        Write-Verbose `
+             -Message $VerboseMessage 
+        
+        
+        # Construct path to azuredeploy.parameters.json in the ARM template
+        $azuredeployParametersLocation = $ARMTemplateFolder + '\' + $azuredeployParametersFileName
+        
+        
+        $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $azuredeployParametersLocation is : ' + $azuredeployParametersLocation
+        Write-Verbose `
+             -Message $VerboseMessage 
+        
+        #endregion
 
-
-       $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $ARMTemplateFolder is : ' + $ARMTemplateFolder
-       Write-Verbose `
-            -Message $VerboseMessage 
-
-       
-       # Construct path to azuredeploy.json in the ARM template
-       $azuredeployLocation = $ARMTemplateFolder + '\' + $azuredeployFileName 
-
-
-       $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $azuredeployLocation is : ' + $azuredeployLocation
-       Write-Verbose `
-            -Message $VerboseMessage 
-
-
-       # Construct path to azuredeploy.parameters.json in the ARM template
-       $azuredeployParametersLocation = $ARMTemplateFolder + '\' + $azuredeployParametersFileName
-
-
-       $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $azuredeployParametersLocation is : ' + $azuredeployParametersLocation
-       Write-Verbose `
-            -Message $VerboseMessage 
-
-       #endregion
-
-       #region Check if both azuredeploy.json and azuredeploy.parameters.json exists
-       # in the ARM template folder
-       If ((Test-Path -Path $azuredeployLocation) -and (Test-Path -Path $azuredeployParametersLocation) -eq $true)
-       {
-
-           $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - ' + $azuredeployFileName + ' and ' + $azuredeployParametersFileName + ' are present in ' + $ARMTemplateFolder
-           Write-Verbose `
-               -Message $VerboseMessage 
-
-
-           #region Login if needed
-           If ([string]::IsNullOrEmpty($AzureTenantID) -eq $false)
-           {
-               Add-ARMTemplateLogin `
-                   -AzureTenantID $AzureTenantID `
-                   -AzureCredentials $AzureCredentials `
-                   -ErrorAction Stop | Out-Null
-           }
-           Else
-           {
-               Add-ARMTemplateLogin `
-                   -AzureSubscriptionID $AzureSubscriptionID `
-                   -AzureCredentials $AzureCredentials `
-                   -ErrorAction Stop | Out-Null
-           }
-           #endregion
+        #region Check if both azuredeploy.json and azuredeploy.parameters.json exists
+        # in the ARM template folder
+        If ((Test-Path -Path $azuredeployLocation) -and (Test-Path -Path $azuredeployParametersLocation) -eq $true)
+        {
+            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - ' + $azuredeployFileName + ' and ' + $azuredeployParametersFileName + ' are present in ' + $ARMTemplateFolder
+            Write-Verbose `
+                -Message $VerboseMessage 
+            
+            #region Login if needed
+            If ([string]::IsNullOrEmpty($AzureTenantID) -eq $false)
+            {
+                Add-ARMTemplateLogin `
+                    -AzureTenantID $AzureTenantID `
+                    -AzureCredentials $AzureCredentials `
+                    -ErrorAction Stop | Out-Null
+            }
+            Else
+            {
+                Add-ARMTemplateLogin `
+                    -AzureSubscriptionID $AzureSubscriptionID `
+                    -AzureCredentials $AzureCredentials `
+                    -ErrorAction Stop | Out-Null
+            }
+            #endregion
            
-           #region Create Azure Resource Group
-           Try
-           {
-               
+            #region Create Azure Resource Group
+            Try
+            {
+                If ($PSCmdlet.ShouldProcess("Creating Azure Resource Group: $ARMTemplateFolderName .")) 
+                {
+                    $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Starting Azure Resource Group creation: ' + $ARMTemplateFolderName + ' in region ' + $AzureRegion
+                    Write-Verbose `
+                        -Message $VerboseMessage
 
-               $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Starting Azure Resource Group creation: ' + $ARMTemplateFolderName + ' in region ' + $AzureRegion
-               Write-Verbose `
-                   -Message $VerboseMessage 
+                    # Create New Azur Resource Group
+                    New-AzureRmResourceGroup `
+                        -Name $ARMTemplateFolderName `
+                        -Location $AzureRegion `
+                        -Force `
+                        -ErrorAction Stop | Out-Null
+                    
+                    #region Information
+                    $InformationMessage = 'INFO: ' + (Get-Date -Format HH:mm:ss).ToString() + ' - Created Azure Resource Group: ' + $ARMTemplateFolderName + ' in region ' + $AzureRegion
+                    Write-Information `
+                        -MessageData $InformationMessage
+                    #endregion
 
-
-               # Create New Azur Resource Group
-               New-AzureRmResourceGroup `
-                   -Name $ARMTemplateFolderName `
-                   -Location $AzureRegion `
-                   -Force `
-                   -ErrorAction Stop | Out-Null
-               
-               #region Information
-               $InformationMessage = 'INFO: ' + (Get-Date -Format HH:mm:ss).ToString() + ' - Created Azure Resource Group: ' + $ARMTemplateFolderName + ' in region ' + $AzureRegion
-               Write-Information `
-                   -MessageData $InformationMessage
-               #endregion
-
-
-               $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Created Azure Resource Group: ' + $ARMTemplateFolderName + ' in region ' + $AzureRegion + '.'
-               Write-Verbose `
-                   -Message $VerboseMessage 
-
-           }
-           Catch
-           {
-               $ErrorMessage = 'Failed to create Azure Resource Group.'
-               $ErrorMessage += " `n"
-               $ErrorMessage += 'Error: '
-               $ErrorMessage += $_
-               Write-Error `
-                   -Message $ErrorMessage `
-                   -ErrorAction Stop
-           }
-           #endregion
+                    $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Created Azure Resource Group: ' + $ARMTemplateFolderName + ' in region ' + $AzureRegion + '.'
+                    Write-Verbose `
+                        -Message $VerboseMessage
+               }
+            }
+            Catch
+            {
+                $ErrorMessage = 'Failed to create Azure Resource Group.'
+                $ErrorMessage += " `n"
+                $ErrorMessage += 'Error: '
+                $ErrorMessage += $_
+                Write-Error `
+                    -Message $ErrorMessage `
+                    -ErrorAction Stop
+            }
+            #endregion
            
-           #region Change Location in parameters file
-           If ($ChangeLocationParameterValue -eq $true)
-           {
+            #region Change Location in parameters file
+            If ($ChangeLocationParameterValue -eq $true)
+            {
+                 $ParamFileChangeResult = Set-ARMTemplateParameterFile `
+                                             -ARMTemplateParameterFile $azuredeployParametersLocation `
+                                             -SetType Location `
+                                             -AzureRegion $AzureRegion `
+                                             -ErrorAction Stop
+            
+                # Change location if file is modified
+                If ($ParamFileChangeResult.FileChanged -eq 'Yes')
+                {
+                    $azuredeployParametersLocation = $ParamFileChangeResult.FilePath
+                }
+            }
+            #endregion
+            
+            #region Change Storage Account Name in parameters file
+            If ($ChangeStorageAccountNameParameterValue -eq $true)
+            {
                 $ParamFileChangeResult = Set-ARMTemplateParameterFile `
-                                            -ARMTemplateParameterFile $azuredeployParametersLocation `
-                                            -SetType Location `
-                                            -AzureRegion $AzureRegion `
-                                            -ErrorAction Stop
-           
-               # Change location if file is modified
-               If ($ParamFileChangeResult.FileChanged -eq 'Yes')
-               {
-                   $azuredeployParametersLocation = $ParamFileChangeResult.FilePath
-               }
-           }
-           #endregion
-
-           #region Change Storage Account Name in parameters file
-           If ($ChangeStorageAccountNameParameterValue -eq $true)
-           {
-               $ParamFileChangeResult = Set-ARMTemplateParameterFile `
-                                            -ARMTemplateParameterFile $azuredeployParametersLocation `
-                                            -SetType StorageAccountName `
-                                            -ErrorAction Stop
-           
-               # Change location if file is modified
-               If ($ParamFileChangeResult.FileChanged -eq 'Yes')
-               {
-                   $azuredeployParametersLocation = $ParamFileChangeResult.FilePath
-               }
-           }
-           #endregion
-
-           #region Change Storage Account Name Prefix in parameters file
-           If ($ChangeStorageAccountNamePrefixParameterValue -eq $true)
-           {
-               $ParamFileChangeResult = Set-ARMTemplateParameterFile `
-                                            -ARMTemplateParameterFile $azuredeployParametersLocation `
-                                            -SetType StorageAccountNamePrefix `
-                                            -ErrorAction Stop
-           
-               # Change location if file is modified
-               If ($ParamFileChangeResult.FileChanged -eq 'Yes')
-               {
-                   $azuredeployParametersLocation = $ParamFileChangeResult.FilePath
-               }
-           }
-           #endregion
-
-           #region Change DNS Label in parameters file
-           If ($ChangeDNSLabelParameterValue -eq $true)
-           {
-               $ParamFileChangeResult = Set-ARMTemplateParameterFile `
-                                            -ARMTemplateParameterFile $azuredeployParametersLocation `
-                                            -SetType DNSLabel `
-                                            -ErrorAction Stop
-           
-               # Change location if file is modified
-               If ($ParamFileChangeResult.FileChanged -eq 'Yes')
-               {
-                   $azuredeployParametersLocation = $ParamFileChangeResult.FilePath
-               }
-           }
-           #endregion
-
-           #region Change Password in parameters file
-           If ($ChangePasswordParameterValue -eq $true)
-           {
-               $ParamFileChangeResult = Set-ARMTemplateParameterFile `
-                                            -ARMTemplateParameterFile $azuredeployParametersLocation `
-                                            -SetType Password `
-                                            -ErrorAction Stop
-           
-               # Change location if file is modified
-               If ($ParamFileChangeResult.FileChanged -eq 'Yes')
-               {
-                   $azuredeployParametersLocation = $ParamFileChangeResult.FilePath
-               }
-           }
-           #endregion
-
-           #region Change Location in template file
-           If ($ChangeLocationParameterValue -eq $true)
-           {
-               $TemplateFileChangeResult = Set-ARMTemplateFile `
-                                            -ARMTemplateFile $azuredeployLocation `
-                                            -SetType Location `
-                                            -AzureRegion $AzureRegion `
-                                            -CreateDefaultValue `
-                                            -ErrorAction Stop
-               
-               If ($TemplateFileChangeResult.FileChanged -eq 'Yes')
-               {
-                   $azuredeployLocation = $TemplateFileChangeResult.FilePath
-               }
-           }
-           #endregion
-
-           #region Change Storage Account Name in template file
-           If ($ChangeStorageAccountNameParameterValue -eq $true)
-           {
-               $TemplateFileChangeResult = Set-ARMTemplateFile `
-                                                -ARMTemplateFile $azuredeployLocation `
-                                                -SetType StorageAccountName `
-                                                -CreateDefaultValue `
-                                                -ErrorAction Stop
-           
-               If ($TemplateFileChangeResult.FileChanged -eq 'Yes')
-               {
-                   $azuredeployLocation = $TemplateFileChangeResult.FilePath
-               }
-           }
-           #endregion
-
-           #region Change Storage Account Name Prefix in template file
-           If ($ChangeStorageAccountNamePrefixParameterValue -eq $true)
-           {
-               $TemplateFileChangeResult = Set-ARMTemplateFile `
-                                                -ARMTemplateFile $azuredeployLocation `
-                                                -SetType StorageAccountNamePrefix `
-                                                -CreateDefaultValue `
-                                                -ErrorAction Stop
-           
-               If ($TemplateFileChangeResult.FileChanged -eq 'Yes')
-               {
-                   $azuredeployLocation = $TemplateFileChangeResult.FilePath
-               }
-           }
-           #endregion
-
-           #region Change DNS Label in template file
-           If ($ChangeDNSLabelParameterValue -eq $true)
-           {
-               $TemplateFileChangeResult = Set-ARMTemplateFile `
-                                                -ARMTemplateFile $azuredeployLocation `
-                                                -SetType DNSLabel `
-                                                -CreateDefaultValue `
-                                                -ErrorAction Stop
-           
-               If ($TemplateFileChangeResult.FileChanged -eq 'Yes')
-               {
-                   $azuredeployLocation = $TemplateFileChangeResult.FilePath
-               }
-           }
-           #endregion
-
-           #region Change Password in template file
-           If ($ChangePasswordParameterValue -eq $true)
-           {
-               $TemplateFileChangeResult = Set-ARMTemplateFile `
-                                                -ARMTemplateFile $azuredeployLocation `
-                                                -SetType Password `
-                                                -CreateDefaultValue `
-                                                -ErrorAction Stop
-           
-               If ($TemplateFileChangeResult.FileChanged -eq 'Yes')
-               {
-                   $azuredeployLocation = $TemplateFileChangeResult.FilePath
-               }
-           }
-           #endregion
-
-
-           #region Azure Resource Group Deployment
-           Try
-           {
-                   $DeploymentError = $null
-                   $AzureDeploymentOutput = $null
-                   $DeploymentName = ($ARMTemplateFolderName + '-' + ((Get-Date).ToUniversalTime()).ToString('ddMMyy-HHmmss'))
-
-
-                   $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $DeploymentName is: ' + $DeploymentName
-                   Write-Verbose `
-                       -Message $VerboseMessage 
-
-
-
-                   $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Starting Azure Resource Group Deployment: ' + $DeploymentName
-                   $VerboseMessage += " `n"
-                   $VerboseMessage += 'Deployment Name: ' + $DeploymentName
-                   $VerboseMessage += " `n"
-                   $VerboseMessage += 'Resource Group Name: ' + $ARMTemplateFolderName
-                   $VerboseMessage += " `n"
-                   $VerboseMessage += 'Template File: ' + $azuredeployLocation
-                   $VerboseMessage += " `n"
-                   $VerboseMessage += 'Template Parameter File: ' + $azuredeployParametersLocation
-                   Write-Verbose `
-                       -Message $VerboseMessage 
-
-
-                   #region Information
-                   $InformationMessage = 'INFO: ' + (Get-Date -Format HH:mm:ss).ToString() + ' - Starting deployment: ' + $DeploymentName + ' for template ' + $ARMTemplateFolderName
-                   Write-Information `
-                       -MessageData $InformationMessage
-                   #endregion
-
-                   $AzureDeploymentOutput = New-AzureRmResourceGroupDeployment `
-                                               -Name  $DeploymentName `
-                                               -ResourceGroupName $ARMTemplateFolderName `
-                                               -TemplateFile $azuredeployLocation `
-                                               -TemplateParameterFile $azuredeployParametersLocation `
-                                               -Force `
-                                               -ErrorAction SilentlyContinue `
-                                               -ErrorVariable DeploymentError
-
-                   #region Deploymnent Failed on start
-                   if ($DeploymentError -ne $null -and $null -eq $AzureDeploymentOutput)
-                   {
-
-                       $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Deployment ' + $DeploymentName + ' failed'
-                       Write-Verbose `
-                           -Message $VerboseMessage
-
-
-                       $PowerShellErrorObj = `
-                           [pscustomobject]@{'Exception' = $DeploymentError.Exception.Message}
-                       
-                       # Wait until logs appear
-                       $AzureAuditLogs = $null
-                       $EndDate = (Get-Date).AddSeconds(300)
-                       
-                       do 
-                       {
-                           Start-Sleep `
-                               -Seconds 10
-                           
-                           $AzureAuditLogs = Get-AzureRmLog `
-                                               -ResourceGroup $ARMTemplateFolderName `
-                                               -StartTime (Get-Date).AddHours(-1) `
-                                               -Status Failed `
-                                               -DetailedOutput `
-                                               -ErrorAction Stop
-                           
-                           if ([string]::IsNullOrEmpty($AzureAuditLogs) -eq $false)
-                           {
-                               break;
-                           }
-                           
-                           $CurrrentDate = Get-Date
-
-                       }while ($CurrrentDate -le $EndDate)
-
-                       
-                       
-                       # If $AzureAuditLogs is empty write error
-                       If ([string]::IsNullOrEmpty($AzureAuditLogs) -eq $true)
-                       {
-                            # Move template folder to BadError
-                            Move-ARMTemplateFolder `
-                                -ARMTemplatePath $ARMTemplateFolder `
-                                -OutputPath $OutputPath `
-                                -ARMTemplateStatus BadError `
-                                -ErrorAction Stop | Out-Null
-                            
-                            $ARMTemplateBadError++
-                            
-                            $WarningMessage = 'Failed to start Azure Resource Group Deployment.'
-                            $WarningMessage += " `n"
-                            $WarningMessage = 'No Azure Audit logs were available for writing the error in log.'
-                            $WarningMessage += " `n"
-                            $WarningMessage += 'Error: '
-                            $WarningMessage += $DeploymentError
-                            Write-Warning `
-                                -Message $WarningMessage
-                            
-                           #region Information
-                           $InformationMessage = 'INFO: ' + (Get-Date -Format HH:mm:ss).ToString() + ' - Deployment: ' + $DeploymentName + ' failed for template ' + $ARMTemplateFolderName
-                           Write-Information `
-                               -MessageData $InformationMessage
-                           #endregion
-                       }
-                       # If $AzureAuditLogs has results
-                       Else
-                       {
-                           Write-ARMTemplateLog `
-                               -DeploymentLog $PowerShellErrorObj `
-                               -ResourcesLogs $AzureAuditLogs `
-                               -LogType PowerShellError `
-                               -ARMTemplatePath $ARMTemplateFolder `
-                               -ErrorAction Stop | Out-Null
-                       
-                           # Move template folder to Queued
-                           Move-ARMTemplateFolder `
-                               -ARMTemplatePath $ARMTemplateFolder `
-                               -OutputPath $OutputPath `
-                               -ARMTemplateStatus Error `
-                               -ErrorAction Stop | Out-Null
-                           
-                           
-                           # Increment Failed templates count
-                           $ARMTemplateError++
-                           
-                           #region Information
-                           $InformationMessage = 'INFO: ' + (Get-Date -Format HH:mm:ss).ToString() + ' - Deployment: ' + $DeploymentName + ' failed for template ' + $ARMTemplateFolderName
-                           Write-Information `
-                               -MessageData $InformationMessage
-                           #endregion
-                       }
-                       
-                       
-                   }
-                   #endregion
-                   #region Failed Deployment
-                   Elseif ($DeploymentError -ne $null -and $AzureDeploymentOutput.ProvisioningState -eq 'Failed')
-                   {
-
-                       $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Deployment ' + $DeploymentName + ' failed'
-                       Write-Verbose `
-                           -Message $VerboseMessage
-
-                       
-                       # Get Resource Group Deployment information
-                       $DeploymetnStateObj = Get-AzureRmResourceGroupDeployment `
-                                                   -ResourceGroupName $ARMTemplateFolderName `
-                                                   -Name $DeploymentName `
-                                                   -ErrorAction Stop
-                       
-                       # Get Resource Group advanced deployment information
-                       $FailedOperations = Get-AzureRmResourceGroupDeploymentOperation `
-                                               -DeploymentName $DeploymentName `
-                                               -ResourceGroupName $ARMTemplateFolderName `
-                                               -ErrorAction Stop
-                      
-                       # Write failure information to log
-                       Write-ARMTemplateLog `
-                            -DeploymentLog $DeploymetnStateObj `
-                            -ResourcesLogs $FailedOperations `
-                            -LogType Error `
-                            -ARMTemplatePath $ARMTemplateFolder `
-                            -ErrorAction Stop | Out-Null
-                       
-                       # Move template folder to Queued
-                       Move-ARMTemplateFolder `
-                           -ARMTemplatePath $ARMTemplateFolder `
-                           -OutputPath $OutputPath `
-                           -ARMTemplateStatus Error `
-                           -ErrorAction Stop | Out-Null
-                       
-                       # Increment Failed templates count
-                       $ARMTemplateError++
-
-                       #region Information
-                       $InformationMessage = 'INFO: ' + (Get-Date -Format HH:mm:ss).ToString() + ' - Deployment: ' + $DeploymentName + ' failed for template ' + $ARMTemplateFolderName
-                       Write-Information `
-                           -MessageData $InformationMessage
-                       #endregion
-                   }
-                   #endregion
-                   #region Successful Deployment
-                   Elseif ($AzureDeploymentOutput.ProvisioningState -eq 'Succeeded')
-                   {
-
-                       $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Deployment ' + $DeploymentName + ' succeeded'
-                       Write-Verbose `
-                           -Message $VerboseMessage
+                                             -ARMTemplateParameterFile $azuredeployParametersLocation `
+                                             -SetType StorageAccountName `
+                                             -ErrorAction Stop
+            
+                # Change location if file is modified
+                If ($ParamFileChangeResult.FileChanged -eq 'Yes')
+                {
+                    $azuredeployParametersLocation = $ParamFileChangeResult.FilePath
+                }
+            }
+            #endregion
+            
+            #region Change Storage Account Name Prefix in parameters file
+            If ($ChangeStorageAccountNamePrefixParameterValue -eq $true)
+            {
+                $ParamFileChangeResult = Set-ARMTemplateParameterFile `
+                                             -ARMTemplateParameterFile $azuredeployParametersLocation `
+                                             -SetType StorageAccountNamePrefix `
+                                             -ErrorAction Stop
+            
+                # Change location if file is modified
+                If ($ParamFileChangeResult.FileChanged -eq 'Yes')
+                {
+                    $azuredeployParametersLocation = $ParamFileChangeResult.FilePath
+                }
+            }
+            #endregion
+            
+            #region Change DNS Label in parameters file
+            If ($ChangeDNSLabelParameterValue -eq $true)
+            {
+                $ParamFileChangeResult = Set-ARMTemplateParameterFile `
+                                             -ARMTemplateParameterFile $azuredeployParametersLocation `
+                                             -SetType DNSLabel `
+                                             -ErrorAction Stop
+            
+                # Change location if file is modified
+                If ($ParamFileChangeResult.FileChanged -eq 'Yes')
+                {
+                    $azuredeployParametersLocation = $ParamFileChangeResult.FilePath
+                }
+            }
+            #endregion
+            
+            #region Change Password in parameters file
+            If ($ChangePasswordParameterValue -eq $true)
+            {
+                $ParamFileChangeResult = Set-ARMTemplateParameterFile `
+                                             -ARMTemplateParameterFile $azuredeployParametersLocation `
+                                             -SetType Password `
+                                             -ErrorAction Stop
+            
+                # Change location if file is modified
+                If ($ParamFileChangeResult.FileChanged -eq 'Yes')
+                {
+                    $azuredeployParametersLocation = $ParamFileChangeResult.FilePath
+                }
+            }
+            #endregion
+            
+            #region Change SSH Key Data in parameters file
+            If ($ChangeSSHKeyDataParameterValue -eq $true)
+            {
+                $ParamFileChangeResult = Set-ARMTemplateParameterFile `
+                                             -ARMTemplateParameterFile $azuredeployParametersLocation `
+                                             -SetType SSHKeyData `
+                                             -ErrorAction Stop
+            
+                # Change location if file is modified
+                If ($ParamFileChangeResult.FileChanged -eq 'Yes')
+                {
+                    $azuredeployParametersLocation = $ParamFileChangeResult.FilePath
+                }
+            }
+            #endregion
+            
+            #region Change VM Name in parameters file
+            If ($ChangeVMNameParameterValue -eq $true)
+            {
+                $ParamFileChangeResult = Set-ARMTemplateParameterFile `
+                                             -ARMTemplateParameterFile $azuredeployParametersLocation `
+                                             -SetType VMName `
+                                             -ErrorAction Stop
+            
+                # Change location if file is modified
+                If ($ParamFileChangeResult.FileChanged -eq 'Yes')
+                {
+                    $azuredeployParametersLocation = $ParamFileChangeResult.FilePath
+                }
+            }
+            #endregion
+            
+            #region Change User Name in parameters file
+            If ($ChangeUsrNameParameterValue -eq $true)
+            {
+                $ParamFileChangeResult = Set-ARMTemplateParameterFile `
+                                             -ARMTemplateParameterFile $azuredeployParametersLocation `
+                                             -SetType UserName `
+                                             -ErrorAction Stop
+            
+                # Change location if file is modified
+                If ($ParamFileChangeResult.FileChanged -eq 'Yes')
+                {
+                    $azuredeployParametersLocation = $ParamFileChangeResult.FilePath
+                }
+            }
+            #endregion
+            
+            #region Change App Name in parameters file
+            If ($ChangeAppNameParameterValue -eq $true)
+            {
+                $ParamFileChangeResult = Set-ARMTemplateParameterFile `
+                                             -ARMTemplateParameterFile $azuredeployParametersLocation `
+                                             -SetType AppName `
+                                             -ErrorAction Stop
+            
+                # Change location if file is modified
+                If ($ParamFileChangeResult.FileChanged -eq 'Yes')
+                {
+                    $azuredeployParametersLocation = $ParamFileChangeResult.FilePath
+                }
+            }
+            #endregion
+            
+            
+            #region Change Location in template file
+            If ($ChangeLocationParameterValue -eq $true)
+            {
+                $TemplateFileChangeResult = Set-ARMTemplateFile `
+                                             -ARMTemplateFile $azuredeployLocation `
+                                             -SetType Location `
+                                             -AzureRegion $AzureRegion `
+                                             -CreateDefaultValue `
+                                             -ErrorAction Stop
+                
+                If ($TemplateFileChangeResult.FileChanged -eq 'Yes')
+                {
+                    $azuredeployLocation = $TemplateFileChangeResult.FilePath
+                }
+            }
+            #endregion
+            
+            #region Change Storage Account Name in template file
+            If ($ChangeStorageAccountNameParameterValue -eq $true)
+            {
+                $TemplateFileChangeResult = Set-ARMTemplateFile `
+                                                 -ARMTemplateFile $azuredeployLocation `
+                                                 -SetType StorageAccountName `
+                                                 -CreateDefaultValue `
+                                                 -ErrorAction Stop
+            
+                If ($TemplateFileChangeResult.FileChanged -eq 'Yes')
+                {
+                    $azuredeployLocation = $TemplateFileChangeResult.FilePath
+                }
+            }
+            #endregion
+            
+            #region Change Storage Account Name Prefix in template file
+            If ($ChangeStorageAccountNamePrefixParameterValue -eq $true)
+            {
+                $TemplateFileChangeResult = Set-ARMTemplateFile `
+                                                 -ARMTemplateFile $azuredeployLocation `
+                                                 -SetType StorageAccountNamePrefix `
+                                                 -CreateDefaultValue `
+                                                 -ErrorAction Stop
+            
+                If ($TemplateFileChangeResult.FileChanged -eq 'Yes')
+                {
+                    $azuredeployLocation = $TemplateFileChangeResult.FilePath
+                }
+            }
+            #endregion
+            
+            #region Change DNS Label in template file
+            If ($ChangeDNSLabelParameterValue -eq $true)
+            {
+                $TemplateFileChangeResult = Set-ARMTemplateFile `
+                                                 -ARMTemplateFile $azuredeployLocation `
+                                                 -SetType DNSLabel `
+                                                 -CreateDefaultValue `
+                                                 -ErrorAction Stop
+            
+                If ($TemplateFileChangeResult.FileChanged -eq 'Yes')
+                {
+                    $azuredeployLocation = $TemplateFileChangeResult.FilePath
+                }
+            }
+            #endregion
+            
+            #region Change Password in template file
+            If ($ChangePasswordParameterValue -eq $true)
+            {
+                $TemplateFileChangeResult = Set-ARMTemplateFile `
+                                                 -ARMTemplateFile $azuredeployLocation `
+                                                 -SetType Password `
+                                                 -CreateDefaultValue `
+                                                 -ErrorAction Stop
+            
+                If ($TemplateFileChangeResult.FileChanged -eq 'Yes')
+                {
+                    $azuredeployLocation = $TemplateFileChangeResult.FilePath
+                }
+            }
+            #endregion
+            
+            #region Change SSH Key Data in template file
+            If ($ChangeSSHKeyDataParameterValue -eq $true)
+            {
+                $TemplateFileChangeResult = Set-ARMTemplateFile `
+                                                 -ARMTemplateFile $azuredeployLocation `
+                                                 -SetType SSHKeyData `
+                                                 -CreateDefaultValue `
+                                                 -ErrorAction Stop
+            
+                If ($TemplateFileChangeResult.FileChanged -eq 'Yes')
+                {
+                    $azuredeployLocation = $TemplateFileChangeResult.FilePath
+                }
+            }
+            #endregion
+            
+            #region Change VM Name in template file
+            If ($ChangeVMNameParameterValue -eq $true)
+            {
+                $TemplateFileChangeResult = Set-ARMTemplateFile `
+                                                 -ARMTemplateFile $azuredeployLocation `
+                                                 -SetType VMName `
+                                                 -CreateDefaultValue `
+                                                 -ErrorAction Stop
+            
+                If ($TemplateFileChangeResult.FileChanged -eq 'Yes')
+                {
+                    $azuredeployLocation = $TemplateFileChangeResult.FilePath
+                }
+            }
+            #endregion
+            
+            #region Change User Name in template file
+            If ($ChangeUsrNameParameterValue -eq $true)
+            {
+                $TemplateFileChangeResult = Set-ARMTemplateFile `
+                                                 -ARMTemplateFile $azuredeployLocation `
+                                                 -SetType UserName `
+                                                 -CreateDefaultValue `
+                                                 -ErrorAction Stop
+            
+                If ($TemplateFileChangeResult.FileChanged -eq 'Yes')
+                {
+                    $azuredeployLocation = $TemplateFileChangeResult.FilePath
+                }
+            }
+            #endregion
+            
+            #region Change App Name in template file
+            If ($ChangeAppNameParameterValue -eq $true)
+            {
+                $TemplateFileChangeResult = Set-ARMTemplateFile `
+                                                 -ARMTemplateFile $azuredeployLocation `
+                                                 -SetType AppName `
+                                                 -CreateDefaultValue `
+                                                 -ErrorAction Stop
+            
+                If ($TemplateFileChangeResult.FileChanged -eq 'Yes')
+                {
+                    $azuredeployLocation = $TemplateFileChangeResult.FilePath
+                }
+            }
+            #endregion
 
 
-                       # Get Resource Group Deployment information
-                       $DeploymetnStateObj = Get-AzureRmResourceGroupDeployment `
-                                                   -ResourceGroupName $ARMTemplateFolderName `
-                                                   -Name $DeploymentName `
-                                                   -ErrorAction Stop
-                       
-                       # Get Resource Group Deployment advanced information
-                       $SucceededOperations = Get-AzureRmResourceGroupDeploymentOperation `
-                                               -DeploymentName $DeploymentName `
-                                               -ResourceGroupName $ARMTemplateFolderName `
-                                               -ErrorAction Stop 
-                       
-                       # Write success information to log
-                       Write-ARMTemplateLog `
-                            -DeploymentLog $DeploymetnStateObj `
-                            -ResourcesLogs $SucceededOperations `
-                            -LogType Success `
-                            -ARMTemplatePath $ARMTemplateFolder `
-                            -ErrorAction Stop | Out-Null
-
-                       # Move template folder to Successful
-                       Move-ARMTemplateFolder `
-                           -ARMTemplatePath $ARMTemplateFolder `
-                           -OutputPath $OutputPath `
-                           -ARMTemplateStatus Success `
-                           -ErrorAction Stop | Out-Null
-                       
-                       # Increment successfull templates count
-                       $ARMTemplateSuccess++
-
-                       #region Information
-                       $InformationMessage = 'INFO: ' + (Get-Date -Format HH:mm:ss).ToString() + ' - Deployment: ' + $DeploymentName + ' succeeded for template ' + $ARMTemplateFolderName
-                       Write-Information `
-                           -MessageData $InformationMessage
-                       #endregion
-
-                   }
-                   #endregion
- 
-               }
-           Catch
-           {
-                   $ErrorMessage = 'Failed to create Azure Resource Group Deployment.'
-                   $ErrorMessage += " `n"
-                   $ErrorMessage += 'Error: '
-                   $ErrorMessage += $_
-                   Write-Error `
-                       -Message $ErrorMessage `
-                       -ErrorAction Stop
-               }
-           #endregion
-
-           #region Remove Azure Resource Group
-           $RemoveRGParams = @{}
-           
-           If ([string]::IsNullOrEmpty($AzureTenantID) -eq $false)
-           {
-               $RemoveRGParams.Add('AzureTenantID', $AzureTenantID)
-           }
-           Else
-           {
-               $RemoveRGParams.Add('AzureSubscriptionID', $AzureSubscriptionID)
-           }
-           
-           $RemoveRGParams.Add('ARMTemplateName', $ARMTemplateFolderName)
-           $RemoveRGParams.Add('AzureCredentials', $AzureCredentials)
-           
-           Remove-ARMTemplateDeployment `
-               -ErrorAction Stop `
-               @RemoveRGParams
-       
-           #endregion
-           
-       }
-       #endregion
-       #region Move to Invalid
-       Else
-       {
-
-           $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - ' + $azuredeployFileName + ' and/or ' + $azuredeployParametersFileName + ' are not present in ' + $ARMTemplateFolder
-           Write-Verbose `
-               -Message $VerboseMessage 
-
-
-           # Move folder if does not contain azuredeploy.json and azuredeploy.parameters.json
-           If ($PSCmdlet.ShouldProcess("Moving $ARMTemplateFolder to Invalid folder.")) 
-           {
-
-                $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Starting to move folder ' + $ARMTemplateFolder
+            #region Azure Resource Group Deployment
+            Try
+            {
+                $DeploymentError = $null
+                $AzureDeploymentOutput = $null
+                $DeploymentName = ($ARMTemplateFolderName + '-' + ((Get-Date).ToUniversalTime()).ToString('ddMMyy-HHmmss'))
+                
+                $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $DeploymentName is: ' + $DeploymentName
                 Write-Verbose `
                     -Message $VerboseMessage 
 
-
-                Move-ARMTemplateFolder `
-                    -ARMTemplatePath $ARMTemplateFolder `
-                    -OutputPath $OutputPath `
-                    -ARMTemplateStatus Invalid `
-                    -ErrorAction Stop
+                $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Starting Azure Resource Group Deployment: ' + $DeploymentName
+                $VerboseMessage += " `n"
+                $VerboseMessage += 'Deployment Name: ' + $DeploymentName
+                $VerboseMessage += " `n"
+                $VerboseMessage += 'Resource Group Name: ' + $ARMTemplateFolderName
+                $VerboseMessage += " `n"
+                $VerboseMessage += 'Template File: ' + $azuredeployLocation
+                $VerboseMessage += " `n"
+                $VerboseMessage += 'Template Parameter File: ' + $azuredeployParametersLocation
+                Write-Verbose `
+                    -Message $VerboseMessage 
                 
-                $ARMTemplateInvalid++
 
                 #region Information
-                $InformationMessage = 'INFO: ' + (Get-Date -Format HH:mm:ss).ToString() + ' - Template is invalid: ' + $ARMTemplateFolderName
+                $InformationMessage = 'INFO: ' + (Get-Date -Format HH:mm:ss).ToString() + ' - Starting deployment: ' + $DeploymentName + ' for template ' + $ARMTemplateFolderName
                 Write-Information `
                     -MessageData $InformationMessage
                 #endregion
-
-
-                $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Moved folder ' + $ARMTemplateFolder
-                Write-Verbose `
-                    -Message $VerboseMessage 
-
-           }
-       }
-       #endregion   
+                
+                $AzureDeploymentOutput = New-AzureRmResourceGroupDeployment `
+                                            -Name  $DeploymentName `
+                                            -ResourceGroupName $ARMTemplateFolderName `
+                                            -TemplateFile $azuredeployLocation `
+                                            -TemplateParameterFile $azuredeployParametersLocation `
+                                            -Force `
+                                            -ErrorAction SilentlyContinue `
+                                            -ErrorVariable DeploymentError
+                
+                #region Deploymnent Failed on start
+                if ($DeploymentError -ne $null -and $null -eq $AzureDeploymentOutput)
+                {
+                    $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Deployment ' + $DeploymentName + ' failed'
+                    Write-Verbose `
+                        -Message $VerboseMessage
+                
+                
+                    $PowerShellErrorObj = `
+                        [pscustomobject]@{'Exception' = $DeploymentError.Exception.Message}
+                    
+                    # Wait until logs appear
+                    $AzureAuditLogs = $null
+                    $EndDate = (Get-Date).AddSeconds(300)
+                    
+                    do 
+                    {
+                        Start-Sleep `
+                            -Seconds 10 `
+                            -ErrorAction Stop
+                        
+                        $AzureAuditLogs = Get-AzureRmLog `
+                                            -ResourceGroup $ARMTemplateFolderName `
+                                            -StartTime (Get-Date).AddHours(-1) `
+                                            -Status Failed `
+                                            -DetailedOutput `
+                                            -ErrorAction Stop
+                        
+                        if ([string]::IsNullOrEmpty($AzureAuditLogs) -eq $false)
+                        {
+                            break;
+                        }
+                        
+                        $CurrrentDate = Get-Date
+                
+                    }while ($CurrrentDate -le $EndDate)
+                
+                    
+                    
+                    # If $AzureAuditLogs is empty write error
+                    If ([string]::IsNullOrEmpty($AzureAuditLogs) -eq $true)
+                    {
+                        # Increment BadError count
+                        $ARMTemplateBadError++
+                         
+                        $WarningMessage = 'Failed to start Azure Resource Group Deployment.'
+                        $WarningMessage += " `n"
+                        $WarningMessage = 'No Azure Audit logs were available for writing the error in log.'
+                        $WarningMessage += " `n"
+                        $WarningMessage += 'Error: '
+                        $WarningMessage += $DeploymentError
+                        Write-Warning `
+                            -Message $WarningMessage
+                         
+                        #region Information
+                        $InformationMessage = 'INFO: ' + (Get-Date -Format HH:mm:ss).ToString() + ' - Deployment: ' + $DeploymentName + ' failed for template ' + $ARMTemplateFolderName
+                        Write-Information `
+                            -MessageData $InformationMessage
+                        #endregion
+                    }
+                    # If $AzureAuditLogs has results
+                    Else
+                    {
+                        Write-ARMTemplateLog `
+                            -DeploymentLog $PowerShellErrorObj `
+                            -ResourcesLogs $AzureAuditLogs `
+                            -LogType PowerShellError `
+                            -ARMTemplatePath $ARMTemplateFolder `
+                            -ErrorAction Stop | Out-Null
+                        
+                        # Increment Failed templates count
+                        $ARMTemplateError++
+                        
+                        #region Information
+                        $InformationMessage = 'INFO: ' + (Get-Date -Format HH:mm:ss).ToString() + ' - Deployment: ' + $DeploymentName + ' failed for template ' + $ARMTemplateFolderName
+                        Write-Information `
+                            -MessageData $InformationMessage
+                        #endregion
+                    }
+                    
+                    
+                }
+                #endregion
+                #region Failed Deployment
+                Elseif ($DeploymentError -ne $null -and $AzureDeploymentOutput.ProvisioningState -eq 'Failed')
+                {
+                    $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Deployment ' + $DeploymentName + ' failed'
+                    Write-Verbose `
+                        -Message $VerboseMessage
+                
+                    
+                    # Get Resource Group Deployment information
+                    $DeploymetnStateObj = Get-AzureRmResourceGroupDeployment `
+                                                -ResourceGroupName $ARMTemplateFolderName `
+                                                -Name $DeploymentName `
+                                                -ErrorAction Stop
+                    
+                    # Get Resource Group advanced deployment information
+                    $FailedOperations = Get-AzureRmResourceGroupDeploymentOperation `
+                                            -DeploymentName $DeploymentName `
+                                            -ResourceGroupName $ARMTemplateFolderName `
+                                            -ErrorAction Stop
+                   
+                    # Write failure information to log
+                    Write-ARMTemplateLog `
+                         -DeploymentLog $DeploymetnStateObj `
+                         -ResourcesLogs $FailedOperations `
+                         -LogType Error `
+                         -ARMTemplatePath $ARMTemplateFolder `
+                         -ErrorAction Stop | Out-Null
+                    
+                    # Increment Failed templates count
+                    $ARMTemplateError++
+                
+                    #region Information
+                    $InformationMessage = 'INFO: ' + (Get-Date -Format HH:mm:ss).ToString() + ' - Deployment: ' + $DeploymentName + ' failed for template ' + $ARMTemplateFolderName
+                    Write-Information `
+                        -MessageData $InformationMessage
+                    #endregion
+                }
+                #endregion
+                #region Successful Deployment
+                Elseif ($AzureDeploymentOutput.ProvisioningState -eq 'Succeeded')
+                {
+                    $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Deployment ' + $DeploymentName + ' succeeded'
+                    Write-Verbose `
+                        -Message $VerboseMessage
+                
+                
+                    # Get Resource Group Deployment information
+                    $DeploymetnStateObj = Get-AzureRmResourceGroupDeployment `
+                                                -ResourceGroupName $ARMTemplateFolderName `
+                                                -Name $DeploymentName `
+                                                -ErrorAction Stop
+                    
+                    # Get Resource Group Deployment advanced information
+                    $SucceededOperations = Get-AzureRmResourceGroupDeploymentOperation `
+                                            -DeploymentName $DeploymentName `
+                                            -ResourceGroupName $ARMTemplateFolderName `
+                                            -ErrorAction Stop 
+                    
+                    # Write success information to log
+                    Write-ARMTemplateLog `
+                         -DeploymentLog $DeploymetnStateObj `
+                         -ResourcesLogs $SucceededOperations `
+                         -LogType Success `
+                         -ARMTemplatePath $ARMTemplateFolder `
+                         -ErrorAction Stop | Out-Null
+                    
+                    # Increment successfull templates count
+                    $ARMTemplateSuccess++
+                
+                    #region Information
+                    $InformationMessage = 'INFO: ' + (Get-Date -Format HH:mm:ss).ToString() + ' - Deployment: ' + $DeploymentName + ' succeeded for template ' + $ARMTemplateFolderName
+                    Write-Information `
+                        -MessageData $InformationMessage
+                    #endregion
+                
+                }
+                #endregion
+ 
+               }
+            Catch
+            {
+                $ErrorMessage = 'Failed to create Azure Resource Group Deployment.'
+                $ErrorMessage += " `n"
+                $ErrorMessage += 'Error: '
+                $ErrorMessage += $_
+                Write-Error `
+                    -Message $ErrorMessage `
+                    -ErrorAction Stop
+            }
+            #endregion 
+        }
+        #endregion
+        #region Invalid Template
+        Else
+        {
+            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - ' + $azuredeployFileName + ' and/or ' + $azuredeployParametersFileName + ' are not present in ' + $ARMTemplateFolder
+            Write-Verbose `
+                -Message $VerboseMessage 
+        
+            $ARMTemplateInvalid++
+        
+            #region Information
+            $InformationMessage = 'INFO: ' + (Get-Date -Format HH:mm:ss).ToString() + ' - Template is invalid: ' + $ARMTemplateFolderName
+            Write-Information `
+                -MessageData $InformationMessage
+            #endregion
+        }
+        #endregion   
     }
     #endregion
 
@@ -5722,12 +7287,11 @@ Function Test-ARMTemplate {
         or Azure Tenant ID. Creates Azure Resource Group 
         with the name of the ARM Template. Finds paramaters
         in azuredeploy.json and azuredeploy.parameters.json'
-        matching keywords ('location','region') and replaces them
-        with the value from AzureRegion parameter. Adds 
-        '-modified' to the file names of changed. Deploys 
-        ARM Template from azuredeploy.json/azuredeploy-modified.json 
-        and azuredeploy.parameters.json/ 
-        azuredeploy.parameters-modified.json. 
+        matching different keywords and replaces their values
+        with the other values. Adds '-modified' to the file 
+        names of changed. Deploys  ARM Template from 
+        azuredeploy.json/azuredeploy-modified.json 
+        and azuredeploy.parameters.json/azuredeploy.parameters-modified.json. 
         Writes Success and Failed results to log files in each
         ARM template folder. Moves the successful ARM templates 
         to Successful folder and Failed templates to Queued 
@@ -5815,8 +7379,32 @@ Function Test-ARMTemplate {
         azuredeploy.json and azuredeploy.parameters.json 
         files and change it if found.
 
+    .PARAMETER  ChangeSSHKeyDataParameterValue
+        Optional parameter. If used will 
+        search for SSH Key Data parameter in 
+        azuredeploy.json and azuredeploy.parameters.json 
+        files and change it if found.
+
+    .PARAMETER  ChangeVMNameParameterValue
+        Optional parameter. If used will 
+        search for VM Name parameter in 
+        azuredeploy.json and azuredeploy.parameters.json 
+        files and change it if found.
+
+    .PARAMETER  ChangeUsrNameParameterValue
+        Optional parameter. If used will 
+        search for User Name parameter in 
+        azuredeploy.json and azuredeploy.parameters.json 
+        files and change it if found.
+
+    .PARAMETER  ChangeAppNameParameterValue
+        Optional parameter. If used will 
+        search for App Name parameter in 
+        azuredeploy.json and azuredeploy.parameters.json 
+        files and change it if found.
+
     .EXAMPLE
-        Test-ARMTemplate -AzureSubscriptionID $SubID -AzureCredentials $cred -AzureRegion 'North Europe' -GitHubRepositoryURL $RepURL -OutputPath 'D:\ARMTEST' -ChangeLocationParameterValue -ChangeStorageAccountNameParameterValue -ChangeStorageAccountNamePrefixParameterValue -ChangeDNSLabelParameterValue -ChangePasswordParameterValue
+        Test-ARMTemplate -AzureSubscriptionID $SubID -AzureCredentials $cred -AzureRegion 'North Europe' -GitHubRepositoryURL $RepURL -OutputPath 'D:\ARMTEST' -ChangeLocationParameterValue -ChangeStorageAccountNameParameterValue -ChangeStorageAccountNamePrefixParameterValue -ChangeDNSLabelParameterValue -ChangePasswordParameterValue -ChangeSSHKeyDataParameterValue -ChangeVMNameParameterValue -ChangeUsrNameParameterValue -ChangeAppNameParameterValue
         Description
         -----------
         Login by Subscription ID.
@@ -5827,6 +7415,10 @@ Function Test-ARMTemplate {
         Changes Storage Account Name Prefix parameter in azuredeploy.json and azuredeploy.parameters.json files
         Changes DNS Label parameter in azuredeploy.json and azuredeploy.parameters.json files
         Changes Password parameter in azuredeploy.json and azuredeploy.parameters.json files
+        Changes SSH Key Data parameter in azuredeploy.json and azuredeploy.parameters.json files
+        Changes VM Name parameter in azuredeploy.json and azuredeploy.parameters.json files
+        Changes User Name parameter in azuredeploy.json and azuredeploy.parameters.json files
+        Changes App Name parameter in azuredeploy.json and azuredeploy.parameters.json files
         Deploys all ARM Templates in the repository
         Logs deployment results
         All data is written in 'D:\ARMTEST'
@@ -5838,7 +7430,7 @@ Function Test-ARMTemplate {
         $RepURL = 'https://github.com/Azure/azure-quickstart-templates'
 
     .EXAMPLE
-        Test-ARMTemplate -AzureSubscriptionID $SubID -AzureCredentials $cred -AzureRegion 'North Europe' -ARMTemplatesPath 'D:\ARMTEST\Downloaded' -OutputPath 'D:\ARMTEST' -ChangeLocationParameterValue -ChangeStorageAccountNameParameterValue -ChangeStorageAccountNamePrefixParameterValue -ChangeDNSLabelParameterValue -ChangePasswordParameterValue
+        Test-ARMTemplate -AzureSubscriptionID $SubID -AzureCredentials $cred -AzureRegion 'North Europe' -ARMTemplatesPath 'D:\ARMTEST\Downloaded' -OutputPath 'D:\ARMTEST' -ChangeLocationParameterValue -ChangeStorageAccountNameParameterValue -ChangeStorageAccountNamePrefixParameterValue -ChangeDNSLabelParameterValue -ChangePasswordParameterValue -ChangeSSHKeyDataParameterValue -ChangeVMNameParameterValue -ChangeUsrNameParameterValue -ChangeAppNameParameterValue
         Description
         -----------
         Login by Subscription ID.
@@ -5847,6 +7439,10 @@ Function Test-ARMTemplate {
         Changes Storage Account Name Prefix parameter in azuredeploy.json and azuredeploy.parameters.json files
         Changes DNS Label parameter in azuredeploy.json and azuredeploy.parameters.json files
         Changes Password parameter in azuredeploy.json and azuredeploy.parameters.json files
+        Changes SSH Key Data parameter in azuredeploy.json and azuredeploy.parameters.json files
+        Changes VM Name parameter in azuredeploy.json and azuredeploy.parameters.json files
+        Changes User Name parameter in azuredeploy.json and azuredeploy.parameters.json files
+        Changes App Name parameter in azuredeploy.json and azuredeploy.parameters.json files
         Deploys all ARM Templates located in 'D:\ARMTEST\Downloaded'
         Logs deployment results
         All data is written in 'D:\ARMTEST'
@@ -6300,12 +7896,28 @@ param (
 
         [Parameter(Position=10,Mandatory=$false)]
         [switch]
-        $ChangePasswordParameterValue=$false
+        $ChangePasswordParameterValue=$false,
+
+        [Parameter(Position=11,Mandatory=$false)]
+        [switch]
+        $ChangeSSHKeyDataParameterValue=$false,
+
+        [Parameter(Position=12,Mandatory=$false)]
+        [switch]
+        $ChangeVMNameParameterValue=$false,
+
+        [Parameter(Position=13,Mandatory=$false)]
+        [switch]
+        $ChangeUsrNameParameterValue=$false,
+
+        [Parameter(Position=14,Mandatory=$false)]
+        [switch]
+        $ChangeAppNameParameterValue=$false
         )
     
     # Set Error Preference	
 	$ErrorActionPreference = 'Stop'
-    
+
     #region Login
     If ([string]::IsNullOrEmpty($AzureTenantID) -eq $false)
     {
@@ -6422,6 +8034,26 @@ param (
             $ARMTemplateDeploymentParams.Add('ChangePasswordParameterValue', $true)
         }
 
+        If ($ChangeSSHKeyDataParameterValue -eq $true)
+        {
+            $ARMTemplateDeploymentParams.Add('ChangeSSHKeyDataParameterValue', $true)
+        }
+
+        If ($ChangeVMNameParameterValue -eq $true)
+        {
+            $ARMTemplateDeploymentParams.Add('ChangeVMNameParameterValue', $true)
+        }
+
+        If ($ChangeUsrNameParameterValue -eq $true)
+        {
+            $ARMTemplateDeploymentParams.Add('ChangeUsrNameParameterValue', $true)
+        }
+
+        If ($ChangeAppNameParameterValue -eq $true)
+        {
+            $ARMTemplateDeploymentParams.Add('ChangeAppNameParameterValue', $true)
+        }
+
         $ARMTemplateDeploymentParams.Add('ARMTemplateName', $ARMTemplateFolderName)
         $ARMTemplateDeploymentParams.Add('AzureRegion', $AzureRegion)
         $ARMTemplateDeploymentParams.Add('ARMTemplatesPath', $ExtractLocation)
@@ -6438,8 +8070,59 @@ param (
         $ARMTBadError  += $ARMTemplateDeploymentResults.BadError
 
         #endregion
+
+        #region Move ARM Template
+
+        # Move template folder to Successful
+        $ARMTemplateStatus = $null
+        If ($ARMTemplateDeploymentResults.Succeeded -eq 1)
+        {
+            $ARMTemplateStatus = 'Success'
+        }
+        Elseif ($ARMTemplateDeploymentResults.BadError -eq 1)
+        {
+            $ARMTemplateStatus = 'BadError'
+        }
+        Elseif ($ARMTemplateDeploymentResults.Failed -eq 1)
+        {
+            $ARMTemplateStatus = 'Error'
+        }
+        ElseIf ($ARMTemplateDeploymentResults.Invalid -eq 1)
+        {
+            $ARMTemplateStatus = 'Invalid'
+        }
+        
+        $ARMTemplateLoc = $ExtractLocation.TrimEnd('\') + '\' + $ARMTemplateFolderName
+        Move-ARMTemplateFolder `
+            -ARMTemplatePath $ARMTemplateLoc `
+            -OutputPath $OutputPath `
+            -ARMTemplateStatus $ARMTemplateStatus `
+            -ErrorAction Stop | Out-Null
+        #endregion
+
+        #region Remove Azure Resource Group
+        If ($ARMTemplateDeploymentResults.Invalid -eq 0)
+        {
+            $RemoveRGParams = @{}
+            
+            If ([string]::IsNullOrEmpty($AzureTenantID) -eq $false)
+            {
+                $RemoveRGParams.Add('AzureTenantID', $AzureTenantID)
+            }
+            Else
+            {
+                $RemoveRGParams.Add('AzureSubscriptionID', $AzureSubscriptionID)
+            }
+            
+            $RemoveRGParams.Add('ARMTemplateName', $ARMTemplateFolderName)
+            $RemoveRGParams.Add('AzureCredentials', $AzureCredentials)
+            
+            Remove-ARMTemplateDeployment `
+                -ErrorAction Stop `
+                @RemoveRGParams
+       }
+       #endregion
     }
-    
 
     #region Merge Error logs
     $ARMErrorLogMergePath = Merge-ARMTemplateLog `
@@ -6478,4 +8161,4 @@ param (
     return $OutputSummary
 
 }
-Export-ModuleMember -Function Remove-ARMTemplateDeployment,Write-ARMTemplateLog,Move-ARMTemplateFolder,New-ARMTemplateDeployment,Get-GitHubRepositoryMasterArchive,Expand-GitHubMasterArchive,Merge-ARMTemplateLog,Test-ARMTemplate,Add-ARMTemplateLogin,Set-ARMTemplateParameterFile,Set-ARMTemplateFile,Export-ARMTemplateLogToCSV,Get-ARMTemplateRandomStorageAccountName,Get-ARMTemplateRandomPassword
+Export-ModuleMember -Function Remove-ARMTemplateDeployment,Write-ARMTemplateLog,Move-ARMTemplateFolder,New-ARMTemplateDeployment,Get-GitHubRepositoryMasterArchive,Expand-GitHubMasterArchive,Merge-ARMTemplateLog,Test-ARMTemplate,Add-ARMTemplateLogin,Set-ARMTemplateParameterFile,Set-ARMTemplateFile,Export-ARMTemplateLogToCSV,Get-ARMTemplateRandomStorageAccountName,Get-ARMTemplateRandomPassword,Get-ARMTemplateSSHPublicKeyData,Get-ARMTemplateRandomVMName,Get-ARMTemplateRandomAppName,Get-ARMTemplateRandomUserName,Get-ARMTemplateRandomDNSLabel
