@@ -849,403 +849,434 @@ param (
     #region Success Log Type
      If ($LogType -eq 'Success')
      {
-         Try
-         {
-             # Set Success log name
-             $SuccessLogName = 'SuccessLog.json'
+        Try
+        {
+            # Set Success log name
+            $SuccessLogName = 'SuccessLog.json'
          
-             $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $SuccessLogName is: ' + $SuccessLogName
-             Write-Verbose `
-                   -Message $VerboseMessage 
+            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $SuccessLogName is: ' + $SuccessLogName
+            Write-Verbose `
+                  -Message $VerboseMessage 
      
-             $SuccessfulResources  = @()
-             # Go trough every instance of Resource Logs
-             foreach ($ResourcesLog in $ResourcesLogs)
-             {
+            $SuccessfulResources  = @()
+            # Go trough every instance of Resource Logs
+            foreach ($ResourcesLog in $ResourcesLogs)
+            {
          
-                # Go trough every instance of Target Resource
-                foreach ($SuccessfulResource in $ResourcesLog.Properties.TargetResource)
+               # Go trough every instance of Target Resource
+               foreach ($SuccessfulResource in $ResourcesLog.Properties.TargetResource)
+               {
+                   # Create PS custom object for additional information
+                   $SuccessfulResourcesAddInf = `
+                       [pscustomobject]@{'Timestamp'    = $ResourcesLog.Properties.Timestamp;
+                                         'Operation ID' = $ResourcesLog.OperationId;
+                                         'Duration'     = $ResourcesLog.Properties.Duration;
+                                         'Tracking ID'  = $ResourcesLog.Properties.TrackingId}
+               
+                   # Create PS custom object for main information
+                   # Add instance for each Target resource
+                   $SuccessfulResources += `
+                       [pscustomobject]@{'Operation ID'           = $ResourcesLog.id;
+                                         'Provisioning State'     = $ResourcesLog.Properties.ProvisioningState;
+                                         'Status Code'            = $ResourcesLog.Properties.StatusCode;
+                                         'Target Resource Type'   = $SuccessfulResource.ResourceType;
+                                         'Target Resource Name'   = $SuccessfulResource.ResourceName;
+                                         'Target Resource ID'     = $SuccessfulResource.id;
+                                         'Additional Information' = $SuccessfulResourcesAddInf }
+               }
+            
+     
+            }
+         
+            # Create PS custom object for additional deployment information
+            $DeploymentLogAddProp  = `
+                [pscustomobject]@{ 'Correlation Id'        = $DeploymentLog.CorrelationId;
+                                   'Timestamp'             = $DeploymentLog.Timestamp.ToString('o',$TimeFormat);
+                                   'Deployment Mode'       = $DeploymentLog.Mode.ToString()}
+         
+            # Create PS custom object for main deployment information
+            $DeploymentLogMainProp = `
+                [pscustomobject]@{'Deployment Name'        = $DeploymentLog.DeploymentName;
+                                  'Resource Group Name'    = $DeploymentLog.ResourceGroupName;
+                                  'Provisioning State'     = $DeploymentLog.ProvisioningState;
+                                  'Successful Resources'   = $SuccessfulResources;
+                                  'Input Parameters'       = $DeploymentLog.Parameters;
+                                  'Template Outputs'       = $DeploymentLog.Outputs;
+                                  'Additional Information' = $DeploymentLogAddProp}
+     
+            # Construct successful log path
+            $SuccessLogFullPath = $ARMTemplatePath.TrimEnd('\') + '\' + $SuccessLogName
+     
+            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $SuccessLogFullPath is: ' + $SuccessLogFullPath
+            Write-Verbose `
+                  -Message $VerboseMessage 
+     
+            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Starting json convertion and writing to file: ' + $SuccessLogFullPath
+            Write-Verbose `
+                  -Message $VerboseMessage 
+     
+            # Convert log to JSON and write it into file
+            $DeploymentLogMainPropJson = $DeploymentLogMainProp | `
+                                            ConvertTo-Json `
+                                                -Depth 15 `
+                                                -ErrorAction Stop 
+            # Fixing convertion of certain characters
+            $dReplacements = @{
+                            '\\u003c' = '<'
+                            '\\u003e' = '>'
+                            '\\u0027' = "'"
+                            }
+            foreach ($oEnumerator in $dReplacements.GetEnumerator()) 
+            {
+                $DeploymentLogMainPropJson = $DeploymentLogMainPropJson -replace $oEnumerator.Key, $oEnumerator.Value
+            }
+            
+            $DeploymentLogMainPropJson | Out-File `
+                                         -FilePath $SuccessLogFullPath `
+                                         -Encoding utf8 `
+                                         -Force `
+                                         -ErrorAction Stop
+         
+            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Converted success log to json and wrote in file: ' + $SuccessLogFullPath
+            Write-Verbose `
+                  -Message $VerboseMessage 
+     
+            $OutputResult = `
+                [pscustomobject]@{'LogPath' = $SuccessLogFullPath}
+        }
+        Catch
+        {
+            $ErrorMessage = 'Failed to format and save Success log.'
+            $ErrorMessage += " `n"
+            $ErrorMessage += 'Error: '
+            $ErrorMessage += $_
+            Write-Error `
+                -Message $ErrorMessage `
+                -ErrorAction Stop
+        }  
+     }
+     #endregion
+    #region Error Log Type
+    Elseif ($LogType -eq 'Error')
+    {
+        Try
+        {
+            # Set Error log name
+            $ErrorLogName = 'ErrorLog.json'
+        
+
+            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $ErrorLogName is: ' + $ErrorLogName
+            Write-Verbose `
+                  -Message $VerboseMessage 
+
+    
+            $FailedResources      = @()
+            $SuccessfulResources  = @()
+    
+            # Go trough every instance of Resource Logs
+            foreach ($ResourcesLog in $ResourcesLogs)
+            {
+                # Get Failed resources
+                If ($ResourcesLog.Properties.ProvisioningState -eq 'Failed')
                 {
-                    # Create PS custom object for additional information
-                    $SuccessfulResourcesAddInf = `
-                        [pscustomobject]@{'Timestamp'    = $ResourcesLog.Properties.Timestamp;
-                                          'Operation ID' = $ResourcesLog.OperationId;
-                                          'Duration'     = $ResourcesLog.Properties.Duration;
-                                          'Tracking ID'  = $ResourcesLog.Properties.TrackingId}
-                
-                    # Create PS custom object for main information
-                    # Add instance for each Target resource
-                    $SuccessfulResources += `
-                        [pscustomobject]@{'Operation ID'           = $ResourcesLog.id;
-                                          'Provisioning State'     = $ResourcesLog.Properties.ProvisioningState;
-                                          'Status Code'            = $ResourcesLog.Properties.StatusCode;
-                                          'Target Resource Type'   = $SuccessfulResource.ResourceType;
-                                          'Target Resource Name'   = $SuccessfulResource.ResourceName;
-                                          'Target Resource ID'     = $SuccessfulResource.id;
-                                          'Additional Information' = $SuccessfulResourcesAddInf }
+                    # Go trough every instance of Target Resource
+                    foreach ($FailedResource in $ResourcesLog.Properties.TargetResource)
+                    {
+                        # Create PS custom object for additional information
+                        $FailedResourcesAddInf = `
+                            [pscustomobject]@{'Timestamp'    = $ResourcesLog.Properties.Timestamp; #2016-01-11T11:58:13.2837063Z
+                                              'Operation ID' = $ResourcesLog.OperationId; # 24A2DD1F92DB6DB0
+                                              'Duration'     = $ResourcesLog.Properties.Duration; #PT1.2905805S
+                                              'Tracking ID'  = $ResourcesLog.Properties.TrackingId #f02f8766-8f18-4897-87b5-62e3f202e735
+                                              }
+                        
+                        # Some Resource Providers are not consistant on Audit log implementation
+                        If ($ResourcesLog.Properties.StatusMessage.Error.Code)
+                        {
+                           $ResourceLogErrorCode = $ResourcesLog.Properties.StatusMessage.Error.Code
+                        }
+                        ElseIf ($ResourcesLog.Properties.StatusMessage.code)
+                        {
+                           $ResourceLogErrorCode = $ResourcesLog.Properties.StatusMessage.code
+                        }
+                        
+                        If ($ResourcesLog.Properties.StatusMessage.Error.Message)
+                        {
+                           $ResourceLogErrorMessage = $ResourcesLog.Properties.StatusMessage.Error.Message
+                        }
+                        ElseIf ($ResourcesLog.Properties.StatusMessage.message)
+                        {
+                           $ResourceLogErrorMessage = $ResourcesLog.Properties.StatusMessage.message
+                        }
+                        
+                        # Create PS custom object for main information
+                        # Add instance for each Target resource
+                        $FailedResources += `
+                            [pscustomobject]@{'Operation ID'           = $ResourcesLog.id; #/subscriptions/3c1d68a5-4064-4522-94e4-e0378165922e/resourceGroups/101-automation-runbook-getvms/providers/Microsoft.Resources/deployments/stan/operations/24A2DD1F92DB6DB0
+                                              'Provisioning State'     = $ResourcesLog.Properties.ProvisioningState; #Failed
+                                              'Status Code'            = $ResourcesLog.Properties.StatusCode; #Conflict
+                                              'Error Code'             = $ResourceLogErrorCode #ResourceDeploymentFailure
+                                              'Error Message'          = $ResourceLogErrorMessage; #The resource operation completed with terminal provisioning state 'Failed'.
+                                              'Target Resource Type'   = $FailedResource.ResourceType; #Microsoft.Automation/automationAccounts/jobs
+                                              'Target Resource Name'   = $FailedResource.ResourceName; #MyAutomationAccount/e6abf1fd-6311-4442-ac1a-22aae3cacdae
+                                              'Target Resource ID'     = $FailedResource.id; # /subscriptions/3c1d68a5-4064-4522-94e4-e0378165922e/resourceGroups/101-automation-runbook-getvms/providers/Microsoft.Automation/automationAccounts/MyAutomationAccount/jobs/e6abf1fd-6311-4442-ac1a-22aae3cacdae
+                                              'Additional Information' = $FailedResourcesAddInf }
+                    }
                 }
-             
-     
-             }
-         
-             # Create PS custom object for additional deployment information
-             $DeploymentLogAddProp  = `
-                 [pscustomobject]@{ 'Correlation Id'        = $DeploymentLog.CorrelationId;
-                                    'Timestamp'             = $DeploymentLog.Timestamp.ToString('o',$TimeFormat);
-                                    'Deployment Mode'       = $DeploymentLog.Mode.ToString()}
-         
-             # Create PS custom object for main deployment information
-             $DeploymentLogMainProp = `
-                 [pscustomobject]@{'Deployment Name'        = $DeploymentLog.DeploymentName;
-                                   'Resource Group Name'    = $DeploymentLog.ResourceGroupName;
-                                   'Provisioning State'     = $DeploymentLog.ProvisioningState;
-                                   'Successful Resources'   = $SuccessfulResources;
-                                   'Input Parameters'       = $DeploymentLog.Parameters;
-                                   'Template Outputs'       = $DeploymentLog.Outputs;
-                                   'Additional Information' = $DeploymentLogAddProp}
-     
-             # Construct successful log path
-             $SuccessLogFullPath = $ARMTemplatePath.TrimEnd('\') + '\' + $SuccessLogName
-     
-             $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $SuccessLogFullPath is: ' + $SuccessLogFullPath
-             Write-Verbose `
-                   -Message $VerboseMessage 
-     
-             $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Starting json convertion and writing to file: ' + $SuccessLogFullPath
-             Write-Verbose `
-                   -Message $VerboseMessage 
-     
-             # Convert log to JSON and write it into file
-             $DeploymentLogMainProp | `
-                 ConvertTo-Json `
-                     -Depth 15 `
-                     -ErrorAction Stop | `
-                 Out-File `
-                     -FilePath $SuccessLogFullPath `
-                     -Encoding unicode `
-                     -Force `
-                     -ErrorAction Stop
-         
-             $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Converted success log to json and wrote in file: ' + $SuccessLogFullPath
-             Write-Verbose `
-                   -Message $VerboseMessage 
-     
-             $OutputResult = `
-                 [pscustomobject]@{'LogPath' = $SuccessLogFullPath}
-         }
-         Catch
-         {
-             $ErrorMessage = 'Failed to format and save Success log.'
-             $ErrorMessage += " `n"
-             $ErrorMessage += 'Error: '
-             $ErrorMessage += $_
-             Write-Error `
-                 -Message $ErrorMessage `
-                 -ErrorAction Stop
-         }
-         
-     }
-     #endregion
-     #region Error Log Type
-     Elseif ($LogType -eq 'Error')
-     {
-         Try
-         {
-             # Set Error log name
-             $ErrorLogName = 'ErrorLog.json'
-         
+                # Get Succeeded resources
+                Elseif ($ResourcesLog.Properties.ProvisioningState -eq 'Succeeded')
+                {
+                    # Go trough every instance of Target Resource
+                    foreach ($SuccessfulResource in $ResourcesLog.Properties.TargetResource)
+                    {
+                        # Create PS custom object for additional information
+                        $SuccessfulResourcesAddInf = `
+                            [pscustomobject]@{'Timestamp'    = $ResourcesLog.Properties.Timestamp;
+                                              'Operation ID' = $ResourcesLog.OperationId;
+                                              'Duration'     = $ResourcesLog.Properties.Duration;
+                                              'Tracking ID'  = $ResourcesLog.Properties.TrackingId}
+                    
+                        # Create PS custom object for main information
+                        # Add instance for each Target resource
+                        $SuccessfulResources += `
+                            [pscustomobject]@{'Operation ID'           = $ResourcesLog.id;
+                                              'Provisioning State'     = $ResourcesLog.Properties.ProvisioningState;
+                                              'Status Code'            = $ResourcesLog.Properties.StatusCode;
+                                              'Target Resource Type'   = $SuccessfulResource.ResourceType;
+                                              'Target Resource Name'   = $SuccessfulResource.ResourceName;
+                                              'Target Resource ID'     = $SuccessfulResource.id;
+                                              'Additional Information' = $SuccessfulResourcesAddInf }
+                    }
+                }
+    
+            }
+        
+            # Create PS custom object for additional deployment information
+            $DeploymentLogAddProp  = `
+                [pscustomobject]@{ 'Correlation Id'        = $DeploymentLog.CorrelationId;
+                                   'Timestamp'             = $DeploymentLog.Timestamp.ToString('o',$TimeFormat);
+                                   'Deployment Mode'       = $DeploymentLog.Mode.ToString()}
+        
+            # Create PS custom object for main deployment information
+            $DeploymentLogMainProp = `
+                [pscustomobject]@{'Deployment Name'        = $DeploymentLog.DeploymentName;
+                                  'Resource Group Name'    = $DeploymentLog.ResourceGroupName;
+                                  'Provisioning State'     = $DeploymentLog.ProvisioningState;
+                                  'Failed Resources'       = $FailedResources ;
+                                  'Input Parameters'       = $DeploymentLog.Parameters;
+                                  'Template Outputs'       = $DeploymentLog.Outputs;
+                                  'Successful Resources'   = $SuccessfulResources;
+                                  'Additional Information' = $DeploymentLogAddProp}
+        
+        
+    
+            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $DeploymentLogMainProp is: ' + $DeploymentLogMainProp
+            Write-Verbose `
+                  -Message $VerboseMessage 
 
-             $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $ErrorLogName is: ' + $ErrorLogName
-             Write-Verbose `
-                   -Message $VerboseMessage 
+    
+            $ErrorLogFullPath = $ARMTemplatePath.TrimEnd('\') + '\' + $ErrorLogName
+    
 
-     
-             $FailedResources      = @()
-             $SuccessfulResources  = @()
-     
-             # Go trough every instance of Resource Logs
-             foreach ($ResourcesLog in $ResourcesLogs)
-             {
-                 # Get Failed resources
-                 If ($ResourcesLog.Properties.ProvisioningState -eq 'Failed')
-                 {
-                     # Go trough every instance of Target Resource
-                     foreach ($FailedResource in $ResourcesLog.Properties.TargetResource)
-                     {
-                         # Create PS custom object for additional information
-                         $FailedResourcesAddInf = `
-                             [pscustomobject]@{'Timestamp'    = $ResourcesLog.Properties.Timestamp; #2016-01-11T11:58:13.2837063Z
-                                               'Operation ID' = $ResourcesLog.OperationId; # 24A2DD1F92DB6DB0
-                                               'Duration'     = $ResourcesLog.Properties.Duration; #PT1.2905805S
-                                               'Tracking ID'  = $ResourcesLog.Properties.TrackingId #f02f8766-8f18-4897-87b5-62e3f202e735
-                                               }
-                         
-                         # Some Resource Providers are not consistant on Audit log implementation
-                         If ($ResourcesLog.Properties.StatusMessage.Error.Code)
-                         {
-                            $ResourceLogErrorCode = $ResourcesLog.Properties.StatusMessage.Error.Code
-                         }
-                         ElseIf ($ResourcesLog.Properties.StatusMessage.code)
-                         {
-                            $ResourceLogErrorCode = $ResourcesLog.Properties.StatusMessage.code
-                         }
-                         
-                         If ($ResourcesLog.Properties.StatusMessage.Error.Message)
-                         {
-                            $ResourceLogErrorMessage = $ResourcesLog.Properties.StatusMessage.Error.Message
-                         }
-                         ElseIf ($ResourcesLog.Properties.StatusMessage.message)
-                         {
-                            $ResourceLogErrorMessage = $ResourcesLog.Properties.StatusMessage.message
-                         }
-                         
-                         # Create PS custom object for main information
-                         # Add instance for each Target resource
-                         $FailedResources += `
-                             [pscustomobject]@{'Operation ID'           = $ResourcesLog.id; #/subscriptions/3c1d68a5-4064-4522-94e4-e0378165922e/resourceGroups/101-automation-runbook-getvms/providers/Microsoft.Resources/deployments/stan/operations/24A2DD1F92DB6DB0
-                                               'Provisioning State'     = $ResourcesLog.Properties.ProvisioningState; #Failed
-                                               'Status Code'            = $ResourcesLog.Properties.StatusCode; #Conflict
-                                               'Error Code'             = $ResourceLogErrorCode #ResourceDeploymentFailure
-                                               'Error Message'          = $ResourceLogErrorMessage; #The resource operation completed with terminal provisioning state 'Failed'.
-                                               'Target Resource Type'   = $FailedResource.ResourceType; #Microsoft.Automation/automationAccounts/jobs
-                                               'Target Resource Name'   = $FailedResource.ResourceName; #MyAutomationAccount/e6abf1fd-6311-4442-ac1a-22aae3cacdae
-                                               'Target Resource ID'     = $FailedResource.id; # /subscriptions/3c1d68a5-4064-4522-94e4-e0378165922e/resourceGroups/101-automation-runbook-getvms/providers/Microsoft.Automation/automationAccounts/MyAutomationAccount/jobs/e6abf1fd-6311-4442-ac1a-22aae3cacdae
-                                               'Additional Information' = $FailedResourcesAddInf }
-                     }
-                 }
-                 # Get Succeeded resources
-                 Elseif ($ResourcesLog.Properties.ProvisioningState -eq 'Succeeded')
-                 {
-                     # Go trough every instance of Target Resource
-                     foreach ($SuccessfulResource in $ResourcesLog.Properties.TargetResource)
-                     {
-                         # Create PS custom object for additional information
-                         $SuccessfulResourcesAddInf = `
-                             [pscustomobject]@{'Timestamp'    = $ResourcesLog.Properties.Timestamp;
-                                               'Operation ID' = $ResourcesLog.OperationId;
-                                               'Duration'     = $ResourcesLog.Properties.Duration;
-                                               'Tracking ID'  = $ResourcesLog.Properties.TrackingId}
-                     
-                         # Create PS custom object for main information
-                         # Add instance for each Target resource
-                         $SuccessfulResources += `
-                             [pscustomobject]@{'Operation ID'           = $ResourcesLog.id;
-                                               'Provisioning State'     = $ResourcesLog.Properties.ProvisioningState;
-                                               'Status Code'            = $ResourcesLog.Properties.StatusCode;
-                                               'Target Resource Type'   = $SuccessfulResource.ResourceType;
-                                               'Target Resource Name'   = $SuccessfulResource.ResourceName;
-                                               'Target Resource ID'     = $SuccessfulResource.id;
-                                               'Additional Information' = $SuccessfulResourcesAddInf }
-                     }
-                 }
-     
-             }
-         
-             # Create PS custom object for additional deployment information
-             $DeploymentLogAddProp  = `
-                 [pscustomobject]@{ 'Correlation Id'        = $DeploymentLog.CorrelationId;
-                                    'Timestamp'             = $DeploymentLog.Timestamp.ToString('o',$TimeFormat);
-                                    'Deployment Mode'       = $DeploymentLog.Mode.ToString()}
-         
-             # Create PS custom object for main deployment information
-             $DeploymentLogMainProp = `
-                 [pscustomobject]@{'Deployment Name'        = $DeploymentLog.DeploymentName;
-                                   'Resource Group Name'    = $DeploymentLog.ResourceGroupName;
-                                   'Provisioning State'     = $DeploymentLog.ProvisioningState;
-                                   'Failed Resources'       = $FailedResources ;
-                                   'Input Parameters'       = $DeploymentLog.Parameters;
-                                   'Template Outputs'       = $DeploymentLog.Outputs;
-                                   'Successful Resources'   = $SuccessfulResources;
-                                   'Additional Information' = $DeploymentLogAddProp}
-         
-         
-     
-             $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $DeploymentLogMainProp is: ' + $DeploymentLogMainProp
-             Write-Verbose `
-                   -Message $VerboseMessage 
+            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $ErrorLogFullPath is: ' + $ErrorLogFullPath
+            Write-Verbose `
+                  -Message $VerboseMessage 
 
-     
-             $ErrorLogFullPath = $ARMTemplatePath.TrimEnd('\') + '\' + $ErrorLogName
-     
+    
 
-             $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $ErrorLogFullPath is: ' + $ErrorLogFullPath
-             Write-Verbose `
-                   -Message $VerboseMessage 
+            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Starting json convertion and writing to file: ' + $ErrorLogFullPath
+            Write-Verbose `
+                  -Message $VerboseMessage 
 
-     
+    
+            # Convert log to JSON and write it into file
+            $DeploymentLogMainPropJSON = $DeploymentLogMainProp | `
+                ConvertTo-Json `
+                    -Depth 10 `
+                    -ErrorAction Stop 
+            # Fixing convertion of certain characters
+            $dReplacements = @{
+                              '\\u003c' = '<'
+                              '\\u003e' = '>'
+                              '\\u0027' = "'"
+                              }
+            foreach ($oEnumerator in $dReplacements.GetEnumerator()) 
+            {
+                $DeploymentLogMainPropJSON = $DeploymentLogMainPropJSON -replace $oEnumerator.Key, $oEnumerator.Value
+            }
+                
+            $DeploymentLogMainPropJSON | Out-File `
+                                            -FilePath $ErrorLogFullPath `
+                                            -Encoding utf8 `
+                                            -Force `
+                                            -ErrorAction Stop
+        
 
-             $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Starting json convertion and writing to file: ' + $ErrorLogFullPath
-             Write-Verbose `
-                   -Message $VerboseMessage 
+            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Converted error log to json and wrote in file: ' + $ErrorLogFullPath
+            Write-Verbose `
+                  -Message $VerboseMessage 
 
-     
-             # Convert log to JSON and write it into file
-             $DeploymentLogMainProp | `
-                 ConvertTo-Json `
-                     -Depth 10 `
-                     -ErrorAction Stop | `
-                 Out-File `
-                     -FilePath $ErrorLogFullPath `
-                     -Encoding unicode `
-                     -Force `
-                     -ErrorAction Stop
-         
+    
+            $OutputResult = `
+                [pscustomobject]@{'LogPath' = $ErrorLogFullPath}
+        }
+        Catch
+        {
+            $ErrorMessage = 'Failed to format and save Error log.'
+            $ErrorMessage += " `n"
+            $ErrorMessage += 'Error: '
+            $ErrorMessage += $_
+            Write-Error `
+                -Message $ErrorMessage `
+                -ErrorAction Stop
+        }
+        
+    }
+    #endregion
+    #region PowerShellError Log Type
+    Elseif ($LogType -eq 'PowerShellError')
+    {
+        Try
+        {
+            # Set Error log name
+            $ErrorLogName = 'ErrorLog.json'
+        
 
-             $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Converted error log to json and wrote in file: ' + $ErrorLogFullPath
-             Write-Verbose `
-                   -Message $VerboseMessage 
+            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $ErrorLogName is: ' + $ErrorLogName
+            Write-Verbose `
+                  -Message $VerboseMessage 
+    
+            $FailedResources      = @()
+            $SuccessfulResources  = @()
+    
+            # Go trough every instance of Resource Logs
+            foreach ($ResourcesLog in $ResourcesLogs)
+            {
+                
+                $DeploymentName = $ResourcesLog.Authorization.Scope.Split('/')[-1]
+                $AzureRGName = $ResourcesLog.ResourceGroupName
+                $ProvisioningState = $ResourcesLog.Status
+                $CorrelationId = $ResourcesLog.CorrelationId
+                $Timestamp = $ResourcesLog.EventTimestamp.ToString('o',$TimeFormat)
+                
+                # For some logs conent is empty   
+                Try
+                {
+                   $ErrorDetails = $ResourcesLog.Properties.Content.Get_Item('statusMessage') | ConvertFrom-Json
+                   $ErrorDetailsErrorCode = $ErrorDetails.error.code
+                   $ErrorDetailsErrorMessage = $ErrorDetails.error.message
+                }
+                Catch
+                {
+                   $ErrorDetailsErrorCode = $null
+                   $ErrorDetailsErrorMessage = $null
+                }
+                
+    
+                
+                # Create PS custom object for additional information
+                $FailedResourcesAddInf = `
+                    [pscustomobject]@{'Timestamp'    = $ResourcesLog.EventTimestamp.ToString('o',$TimeFormat);
+                                      'Operation ID' = $ResourcesLog.OperationId; 
+                                      'Duration'     = $null; 
+                                      'Tracking ID'  = $null}
+                                      
+                
+                # Create PS custom object for main information
+                # Add instance for each Target resource
+                $FailedResources += `
+                    [pscustomobject]@{'Operation ID'           = $ResourcesLog.Authorization.Scope; #/subscriptions/3c1d68a5-4064-4522-94e4-e0378165922e/resourcegroups/101-dtl-create-lab/deployments/101-dtl-create-lab-140116-174950
+                                      'Provisioning State'     = $ResourcesLog.Status; #Failed
+                                      'Status Code'            = $ResourcesLog.SubStatus; #BadRequest
+                                      'Error Code'             = $ErrorDetailsErrorCode; #Custom
+                                      'Error Message'          = $ErrorDetailsErrorMessage; #DisallowedLocation: The provided location 'northeurope' is not permitted for subscription. List of permitted regions is...
+                                      'Target Resource Type'   = $ResourcesLog.OperationName; #Microsoft.Resources/deployments/write
+                                      'Target Resource Name'   = $ResourcesLog.ResourceProviderName;
+                                      'Target Resource ID'     = $ResourcesLog.ResourceId;
+                                      'Additional Information' = $FailedResourcesAddInf }
+            }
+            
+            # Create PS custom object for additional deployment information
+            $DeploymentLogAddProp  = `
+                [pscustomobject]@{ 'Correlation Id'  = $CorrelationId;
+                                   'Timestamp'       = $Timestamp;
+                                   'Deployment Mode' = 'Incremental'}
+            
+            # Create PS custom object for main deployment information
+            $DeploymentLogMainProp = `
+                [pscustomobject]@{'Deployment Name'        = $DeploymentName;
+                                  'Resource Group Name'    = $AzureRGName;
+                                  'Provisioning State'     = $ProvisioningState;
+                                  'Failed Resources'       = $FailedResources ;
+                                  'Input Parameters'       = $null;
+                                  'Template Outputs'       = $null;
+                                  'Successful Resources'   = $null;
+                                  'Additional Information' = $DeploymentLogAddProp}
+            
+        
+    
 
-     
-             $OutputResult = `
-                 [pscustomobject]@{'LogPath' = $ErrorLogFullPath}
-         }
-         Catch
-         {
-             $ErrorMessage = 'Failed to format and save Error log.'
-             $ErrorMessage += " `n"
-             $ErrorMessage += 'Error: '
-             $ErrorMessage += $_
-             Write-Error `
-                 -Message $ErrorMessage `
-                 -ErrorAction Stop
-         }
-         
-     }
-     #endregion
-     #region PowerShellError Log Type
-     Elseif ($LogType -eq 'PowerShellError')
-     {
-         Try
-         {
-             # Set Error log name
-             $ErrorLogName = 'ErrorLog.json'
-         
+            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $DeploymentLogMainProp is: ' + $DeploymentLogMainProp
+            Write-Verbose `
+                  -Message $VerboseMessage 
 
-             $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $ErrorLogName is: ' + $ErrorLogName
-             Write-Verbose `
-                   -Message $VerboseMessage 
-     
-             $FailedResources      = @()
-             $SuccessfulResources  = @()
-     
-             # Go trough every instance of Resource Logs
-             foreach ($ResourcesLog in $ResourcesLogs)
-             {
-                 
-                 $DeploymentName = $ResourcesLog.Authorization.Scope.Split('/')[-1]
-                 $AzureRGName = $ResourcesLog.ResourceGroupName
-                 $ProvisioningState = $ResourcesLog.Status
-                 $CorrelationId = $ResourcesLog.CorrelationId
-                 $Timestamp = $ResourcesLog.EventTimestamp.ToString('o',$TimeFormat)
-                 
-                 # For some logs conent is empty   
-                 Try
-                 {
-                    $ErrorDetails = $ResourcesLog.Properties.Content.Get_Item('statusMessage') | ConvertFrom-Json
-                    $ErrorDetailsErrorCode = $ErrorDetails.error.code
-                    $ErrorDetailsErrorMessage = $ErrorDetails.error.message
-                 }
-                 Catch
-                 {
-                    $ErrorDetailsErrorCode = $null
-                    $ErrorDetailsErrorMessage = $null
-                 }
-                 
-     
-                 
-                 # Create PS custom object for additional information
-                 $FailedResourcesAddInf = `
-                     [pscustomobject]@{'Timestamp'    = $ResourcesLog.EventTimestamp.ToString('o',$TimeFormat);
-                                       'Operation ID' = $ResourcesLog.OperationId; 
-                                       'Duration'     = $null; 
-                                       'Tracking ID'  = $null}
-                                       
-                 
-                 # Create PS custom object for main information
-                 # Add instance for each Target resource
-                 $FailedResources += `
-                     [pscustomobject]@{'Operation ID'           = $ResourcesLog.Authorization.Scope; #/subscriptions/3c1d68a5-4064-4522-94e4-e0378165922e/resourcegroups/101-dtl-create-lab/deployments/101-dtl-create-lab-140116-174950
-                                       'Provisioning State'     = $ResourcesLog.Status; #Failed
-                                       'Status Code'            = $ResourcesLog.SubStatus; #BadRequest
-                                       'Error Code'             = $ErrorDetailsErrorCode; #Custom
-                                       'Error Message'          = $ErrorDetailsErrorMessage; #DisallowedLocation: The provided location 'northeurope' is not permitted for subscription. List of permitted regions is...
-                                       'Target Resource Type'   = $ResourcesLog.OperationName; #Microsoft.Resources/deployments/write
-                                       'Target Resource Name'   = $ResourcesLog.ResourceProviderName;
-                                       'Target Resource ID'     = $ResourcesLog.ResourceId;
-                                       'Additional Information' = $FailedResourcesAddInf }
-             }
-             
-             # Create PS custom object for additional deployment information
-             $DeploymentLogAddProp  = `
-                 [pscustomobject]@{ 'Correlation Id'  = $CorrelationId;
-                                    'Timestamp'       = $Timestamp;
-                                    'Deployment Mode' = 'Incremental'}
-             
-             # Create PS custom object for main deployment information
-             $DeploymentLogMainProp = `
-                 [pscustomobject]@{'Deployment Name'        = $DeploymentName;
-                                   'Resource Group Name'    = $AzureRGName;
-                                   'Provisioning State'     = $ProvisioningState;
-                                   'Failed Resources'       = $FailedResources ;
-                                   'Input Parameters'       = $null;
-                                   'Template Outputs'       = $null;
-                                   'Successful Resources'   = $null;
-                                   'Additional Information' = $DeploymentLogAddProp}
-             
-         
-     
+    
+            $ErrorLogFullPath = $ARMTemplatePath.TrimEnd('\') + '\' + $ErrorLogName
+    
 
-             $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $DeploymentLogMainProp is: ' + $DeploymentLogMainProp
-             Write-Verbose `
-                   -Message $VerboseMessage 
+            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $ErrorLogFullPath is: ' + $ErrorLogFullPath
+            Write-Verbose `
+                  -Message $VerboseMessage 
 
-     
-             $ErrorLogFullPath = $ARMTemplatePath.TrimEnd('\') + '\' + $ErrorLogName
-     
+    
+            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Starting json convertion and writing to file: ' + $ErrorLogFullPath
+            Write-Verbose `
+                  -Message $VerboseMessage 
 
-             $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $ErrorLogFullPath is: ' + $ErrorLogFullPath
-             Write-Verbose `
-                   -Message $VerboseMessage 
+    
+            # Convert log to JSON and write it into file
+            $DeploymentLogMainPropJson = $DeploymentLogMainProp | `
+                ConvertTo-Json `
+                    -Depth 10 `
+                    -ErrorAction Stop 
+            # Fixing convertion of certain characters
+            $dReplacements = @{
+                            '\\u003c' = '<'
+                            '\\u003e' = '>'
+                            '\\u0027' = "'"
+                            }
+            foreach ($oEnumerator in $dReplacements.GetEnumerator()) 
+            {
+                $DeploymentLogMainPropJson = $DeploymentLogMainPropJson -replace $oEnumerator.Key, $oEnumerator.Value
+            }
+            $DeploymentLogMainPropJson | Out-File `
+                                            -FilePath $ErrorLogFullPath `
+                                            -Encoding utf8 `
+                                            -Force `
+                                            -ErrorAction Stop
+        
 
-     
-             $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Starting json convertion and writing to file: ' + $ErrorLogFullPath
-             Write-Verbose `
-                   -Message $VerboseMessage 
+            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Converted error log to json and wrote in file: ' + $ErrorLogFullPath
+            Write-Verbose `
+                  -Message $VerboseMessage 
 
-     
-             # Convert log to JSON and write it into file
-             $DeploymentLogMainProp | `
-                 ConvertTo-Json `
-                     -Depth 10 `
-                     -ErrorAction Stop | `
-                 Out-File `
-                     -FilePath $ErrorLogFullPath `
-                     -Encoding unicode `
-                     -Force `
-                     -ErrorAction Stop
-         
-
-             $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Converted error log to json and wrote in file: ' + $ErrorLogFullPath
-             Write-Verbose `
-                   -Message $VerboseMessage 
-
-     
-             $OutputResult = `
-                 [pscustomobject]@{'LogPath' = $ErrorLogFullPath}
-         }
-         Catch
-         {
-             $ErrorMessage = 'Failed to format and save Error log.'
-             $ErrorMessage += " `n"
-             $ErrorMessage += 'Error: '
-             $ErrorMessage += $_
-             Write-Error `
-                 -Message $ErrorMessage `
-                 -ErrorAction Stop
-         }
-         
-     }
-     #endregion
+    
+            $OutputResult = `
+                [pscustomobject]@{'LogPath' = $ErrorLogFullPath}
+        }
+        Catch
+        {
+            $ErrorMessage = 'Failed to format and save Error log.'
+            $ErrorMessage += " `n"
+            $ErrorMessage += 'Error: '
+            $ErrorMessage += $_
+            Write-Error `
+                -Message $ErrorMessage `
+                -ErrorAction Stop
+        }
+        
+    }
+    #endregion
     
     return $OutputResult
 }
@@ -1871,6 +1902,127 @@ param (
                     }
                 }
                 #endregion
+
+                <#reserved
+                #region Exact Location Keywords
+                $ExactLocationKeywords = @()
+                $ResourceGroupLocation = $AzureRegion
+
+                # Go trough every keyword
+                foreach ($ExactLocationKeyword in $ExactLocationKeywords)
+                {
+                    If ($ParamFileObj.parameters)
+                    {
+                        $ParameterNames = $ParamFileObj.parameters | `
+                                            Get-Member `
+                                                -ErrorAction Stop | `
+                                            Where-Object MemberType -EQ NoteProperty `
+                                                -ErrorAction Stop | `
+                                            Select-Object -ExpandProperty Name `
+                                                -ErrorAction Stop
+                    }
+                    Else
+                    {
+                        $ParameterNames = $ParamFileObj | `
+                                            Get-Member `
+                                                -ErrorAction Stop | `
+                                            Where-Object MemberType -EQ NoteProperty `
+                                                -ErrorAction Stop | `
+                                            Select-Object -ExpandProperty Name `
+                                                -ErrorAction Stop
+                    }
+                    
+                    
+                    # Check for double parameters
+                    If ($ParamFileObj.parameters.parameters)
+                    {
+                        $ParameterNames = $ParamFileObj.parameters.parameters | `
+                                                Get-Member `
+                                                    -ErrorAction Stop | `
+                                                Where-Object MemberType -EQ NoteProperty `
+                                                    -ErrorAction Stop | `
+                                                Select-Object -ExpandProperty Name `
+                                                    -ErrorAction Stop
+                    }
+
+                    # Go trough every Parameter Name
+                    foreach ($ParameterName in $ParameterNames)
+                    {
+                        If ($ParameterName -eq $ExactLocationKeyword)
+                        {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword match: ' + $ExactLocationKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.($ParameterName).Value)
+                                    {
+                                        $ParamFileObj.($ParameterName).Value[$ValueCount] = $ResourceGroupLocation
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    $ParamFileObj.($ParameterName).Value = $ResourceGroupLocation
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.parameters.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.parameters.($ParameterName).Value)
+                                    {
+                                        $ParamFileObj.parameters.($ParameterName).Value[$ValueCount] = $ResourceGroupLocation
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    $ParamFileObj.parameters.($ParameterName).Value = $ResourceGroupLocation
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.parameters.parameters.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.parameters.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.parameters.parameters.($ParameterName).Value)
+                                    {
+                                        $ParamFileObj.parameters.parameters.($ParameterName).Value[$ValueCount] = $ResourceGroupLocation
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    $ParamFileObj.parameters.parameters.($ParameterName).Value = $ResourceGroupLocation
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+                        }
+                    }
+                }
+                #endregion
+                #>
+                
             }
             Catch
             {
@@ -2789,7 +2941,7 @@ param (
         {
             Try
             {
-                #region DNS Label Keywords
+                #region Password Keywords
                 $PasswordKeywords = @('Password')
 
                 # Go trough every keyword
@@ -2932,6 +3084,151 @@ param (
                 }
                 #endregion
 
+                <#reserved
+                #region Exact Password Keywords
+                $ExactPasswordKeywords = @()
+
+                # Go trough every keyword
+                foreach ($ExactPasswordKeyword in $ExactPasswordKeywords)
+                {
+                    If ($ParamFileObj.parameters)
+                    {
+                        $ParameterNames = $ParamFileObj.parameters | `
+                                            Get-Member `
+                                                -ErrorAction Stop | `
+                                            Where-Object MemberType -EQ NoteProperty `
+                                                -ErrorAction Stop | `
+                                            Select-Object -ExpandProperty Name `
+                                                -ErrorAction Stop
+                    }
+                    Else
+                    {
+                        $ParameterNames = $ParamFileObj | `
+                                            Get-Member `
+                                                -ErrorAction Stop | `
+                                            Where-Object MemberType -EQ NoteProperty `
+                                                -ErrorAction Stop | `
+                                            Select-Object -ExpandProperty Name `
+                                                -ErrorAction Stop
+                    }
+                    
+                    
+                    # Check for double parameters
+                    If ($ParamFileObj.parameters.parameters)
+                    {
+                        $ParameterNames = $ParamFileObj.parameters.parameters | `
+                                            Get-Member `
+                                                -ErrorAction Stop | `
+                                            Where-Object MemberType -EQ NoteProperty `
+                                                -ErrorAction Stop | `
+                                            Select-Object -ExpandProperty Name `
+                                                -ErrorAction Stop
+                    }
+
+                    # Go trough every Parameter Name
+                    foreach ($ParameterName in $ParameterNames)
+                    {
+                        If ($ParameterName -eq $ExactPasswordKeyword)
+                        {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword match: ' + $ExactPasswordKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.($ParameterName).Value)
+                                    {
+                                        # Set Value
+                                        $PasswordString = Get-ARMTemplateRandomPassword `
+                                                                -Length 10 `
+                                                                -ErrorAction Stop
+                                        $ParamFileObj.($ParameterName).Value[$ValueCount] = $PasswordString
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    
+                                    # Set Value
+                                    $PasswordString = Get-ARMTemplateRandomPassword `
+                                                            -Length 10 `
+                                                            -ErrorAction Stop
+                                    $ParamFileObj.($ParameterName).Value = $PasswordString
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.parameters.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.parameters.($ParameterName).Value)
+                                    {
+                                        # Set Value
+                                        $PasswordString = Get-ARMTemplateRandomPassword `
+                                                                -Length 10 `
+                                                                -ErrorAction Stop
+                                        $ParamFileObj.parameters.($ParameterName).Value[$ValueCount] = $PasswordString
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    
+                                    # Set Value
+                                    $PasswordString = Get-ARMTemplateRandomPassword `
+                                                            -Length 10 `
+                                                            -ErrorAction Stop
+                                    $ParamFileObj.parameters.($ParameterName).Value = $PasswordString
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.parameters.parameters.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.parameters.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.parameters.parameters.($ParameterName).Value)
+                                    {
+                                        # Set Value
+                                        $PasswordString = Get-ARMTemplateRandomPassword `
+                                                                -Length 10 `
+                                                                -ErrorAction Stop
+                                        $ParamFileObj.parameters.parameters.($ParameterName).Value[$ValueCount] = $PasswordString
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    # Set Value
+                                    $PasswordString = Get-ARMTemplateRandomPassword `
+                                                            -Length 10 `
+                                                            -ErrorAction Stop
+                                    $ParamFileObj.parameters.parameters.($ParameterName).Value = $PasswordString
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+                        }
+                    }
+                }
+                #endregion
+                #>
+
             }
             Catch
             {
@@ -2951,6 +3248,142 @@ param (
         {
             Try
             {
+                <#reserved
+                #region SSH Key Data Keywords
+                $SSHKeyDataKeywords = @()
+
+                # Go trough every keyword
+                foreach ($SSHKeyDataKeyword in $SSHKeyDataKeywords)
+                {
+                    If ($ParamFileObj.parameters)
+                    {
+                        $ParameterNames = $ParamFileObj.parameters | `
+                                            Get-Member `
+                                                -ErrorAction Stop | `
+                                            Where-Object MemberType -EQ NoteProperty `
+                                                -ErrorAction Stop | `
+                                            Select-Object -ExpandProperty Name `
+                                                -ErrorAction Stop
+                    }
+                    Else
+                    {
+                        $ParameterNames = $ParamFileObj | `
+                                            Get-Member `
+                                                -ErrorAction Stop | `
+                                            Where-Object MemberType -EQ NoteProperty `
+                                                -ErrorAction Stop | `
+                                            Select-Object -ExpandProperty Name `
+                                                -ErrorAction Stop
+                    }
+                    
+                    
+                    # Check for double parameters
+                    If ($ParamFileObj.parameters.parameters)
+                    {
+                        $ParameterNames = $ParamFileObj.parameters.parameters | `
+                                            Get-Member `
+                                                -ErrorAction Stop | `
+                                            Where-Object MemberType -EQ NoteProperty `
+                                                -ErrorAction Stop | `
+                                            Select-Object -ExpandProperty Name `
+                                                -ErrorAction Stop
+                    }
+
+                    # Go trough every Parameter Name
+                    foreach ($ParameterName in $ParameterNames)
+                    {
+                        If ($ParameterName -match $SSHKeyDataKeyword)
+                        {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword exact match: ' + $SSHKeyDataKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.($ParameterName).Value)
+                                    {
+                                        # Set Value
+                                        $SSHPublicKeyString = Get-ARMTemplateSSHPublicKeyData `
+                                                                -ErrorAction Stop
+                                        $ParamFileObj.($ParameterName).Value[$ValueCount] = $SSHPublicKeyString
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    # Set Value
+                                    $SSHPublicKeyString = Get-ARMTemplateSSHPublicKeyData `
+                                                            -ErrorAction Stop
+                                    $ParamFileObj.($ParameterName).Value = $SSHPublicKeyString
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.parameters.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.parameters.($ParameterName).Value)
+                                    {
+                                        # Set Value
+                                        $SSHPublicKeyString = Get-ARMTemplateSSHPublicKeyData `
+                                                                -ErrorAction Stop
+                                        $ParamFileObj.parameters.($ParameterName).Value[$ValueCount] = $SSHPublicKeyString
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    # Set Value
+                                    $SSHPublicKeyString = Get-ARMTemplateSSHPublicKeyData `
+                                                            -ErrorAction Stop
+                                    $ParamFileObj.parameters.($ParameterName).Value = $SSHPublicKeyString
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.parameters.parameters.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.parameters.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.parameters.parameters.($ParameterName).Value)
+                                    {
+                                        # Set Value
+                                        $SSHPublicKeyString = Get-ARMTemplateSSHPublicKeyData `
+                                                                -ErrorAction Stop
+                                        $ParamFileObj.parameters.parameters.($ParameterName).Value[$ValueCount] = $SSHPublicKeyString
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    # Set Value
+                                    $SSHPublicKeyString = Get-ARMTemplateSSHPublicKeyData `
+                                                            -ErrorAction Stop
+                                    $ParamFileObj.parameters.parameters.($ParameterName).Value = $SSHPublicKeyString
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+                        }
+                    }
+                }
+                #endregion
+                #>
+
                 #region Exact SSH Key Data Keywords
                 $ExactSSHKeyDataKeywords = @('sshKeyData','sshPublicKey')
 
@@ -3243,6 +3676,149 @@ param (
                     }
                 }
                 #endregion
+
+                <#reserved
+                #region Exact VM Name Keywords
+                $ExactVMNameKeywords = @()
+
+                # Go trough every keyword
+                foreach ($ExactVMNameKeyword in $ExactVMNameKeywords)
+                {
+                    If ($ParamFileObj.parameters)
+                    {
+                        $ParameterNames = $ParamFileObj.parameters | `
+                                            Get-Member `
+                                                -ErrorAction Stop | `
+                                            Where-Object MemberType -EQ NoteProperty `
+                                                -ErrorAction Stop | `
+                                            Select-Object -ExpandProperty Name `
+                                                -ErrorAction Stop
+                    }
+                    Else
+                    {
+                        $ParameterNames = $ParamFileObj | `
+                                            Get-Member `
+                                                -ErrorAction Stop | `
+                                            Where-Object MemberType -EQ NoteProperty `
+                                                -ErrorAction Stop | `
+                                            Select-Object -ExpandProperty Name `
+                                                -ErrorAction Stop
+                    }
+                    
+                    
+                    # Check for double parameters
+                    If ($ParamFileObj.parameters.parameters)
+                    {
+                        $ParameterNames = $ParamFileObj.parameters.parameters | `
+                                            Get-Member `
+                                                -ErrorAction Stop | `
+                                            Where-Object MemberType -EQ NoteProperty `
+                                                -ErrorAction Stop | `
+                                            Select-Object -ExpandProperty Name `
+                                                -ErrorAction Stop
+                    }
+
+                    # Go trough every Parameter Name
+                    foreach ($ParameterName in $ParameterNames)
+                    {
+                        If ($ParameterName -eq $ExactVMNameKeyword)
+                        {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword match: ' + $ExactVMNameKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.($ParameterName).Value)
+                                    {
+                                        # Set Value
+                                        $VMName = Get-ARMTemplateRandomVMName `
+                                                                -Length 8 `
+                                                                -ErrorAction Stop
+                                        $ParamFileObj.($ParameterName).Value[$ValueCount] = $VMName
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    # Set Value
+                                    $VMName = Get-ARMTemplateRandomVMName `
+                                                            -Length 8 `
+                                                            -ErrorAction Stop
+                                    $ParamFileObj.($ParameterName).Value = $VMName
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.parameters.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.parameters.($ParameterName).Value)
+                                    {
+                                        # Set Value
+                                        $VMName = Get-ARMTemplateRandomVMName `
+                                                                -Length 8 `
+                                                                -ErrorAction Stop
+                                        $ParamFileObj.parameters.($ParameterName).Value[$ValueCount] = $VMName
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    # Set Value
+                                    $VMName = Get-ARMTemplateRandomVMName `
+                                                            -Length 8 `
+                                                            -ErrorAction Stop
+                                    $ParamFileObj.parameters.($ParameterName).Value = $VMName
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.parameters.parameters.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.parameters.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.parameters.parameters.($ParameterName).Value)
+                                    {
+                                        # Set Value
+                                        $VMName = Get-ARMTemplateRandomVMName `
+                                                                -Length 8 `
+                                                                -ErrorAction Stop
+                                        $ParamFileObj.parameters.parameters.($ParameterName).Value[$ValueCount] = $VMName
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    # Set Value
+                                    $VMName = Get-ARMTemplateRandomVMName `
+                                                            -Length 8 `
+                                                            -ErrorAction Stop
+                                    $ParamFileObj.parameters.parameters.($ParameterName).Value = $VMName
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+                        }
+                    }
+                }
+                #endregion
+                #>
 
             }
             Catch
@@ -3705,6 +4281,149 @@ param (
                     }
                 }
                 #endregion
+
+                <#reserved
+                #region Exact App Name Keywords
+                $ExactAppNameKeywords = @()
+
+                # Go trough every keyword
+                foreach ($ExactAppNameKeyword in $ExactAppNameKeywords)
+                {
+                    If ($ParamFileObj.parameters)
+                    {
+                        $ParameterNames = $ParamFileObj.parameters | `
+                                            Get-Member `
+                                                -ErrorAction Stop | `
+                                            Where-Object MemberType -EQ NoteProperty `
+                                                -ErrorAction Stop | `
+                                            Select-Object -ExpandProperty Name `
+                                                -ErrorAction Stop
+                    }
+                    Else
+                    {
+                        $ParameterNames = $ParamFileObj | `
+                                            Get-Member `
+                                                -ErrorAction Stop | `
+                                            Where-Object MemberType -EQ NoteProperty `
+                                                -ErrorAction Stop | `
+                                            Select-Object -ExpandProperty Name `
+                                                -ErrorAction Stop
+                    }
+                    
+                    
+                    # Check for double parameters
+                    If ($ParamFileObj.parameters.parameters)
+                    {
+                        $ParameterNames = $ParamFileObj.parameters.parameters | `
+                                            Get-Member `
+                                                -ErrorAction Stop | `
+                                            Where-Object MemberType -EQ NoteProperty `
+                                                -ErrorAction Stop | `
+                                            Select-Object -ExpandProperty Name `
+                                                -ErrorAction Stop
+                    }
+
+                    # Go trough every Parameter Name
+                    foreach ($ParameterName in $ParameterNames)
+                    {
+                        If ($ParameterName -eq $ExactAppNameKeyword)
+                        {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword match: ' + $ExactAppNameKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.($ParameterName).Value)
+                                    {
+                                        # Set Value
+                                        $RandomAppName = Get-ARMTemplateRandomAppName `
+                                                                -Length 8 `
+                                                                -ErrorAction Stop
+                                        $ParamFileObj.($ParameterName).Value[$ValueCount] = $RandomAppName
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    # Set Value
+                                    $RandomAppName = Get-ARMTemplateRandomAppName `
+                                                            -Length 8 `
+                                                            -ErrorAction Stop
+                                    $ParamFileObj.($ParameterName).Value = $RandomAppName
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.parameters.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.parameters.($ParameterName).Value)
+                                    {
+                                        # Set Value
+                                        $RandomAppName = Get-ARMTemplateRandomAppName `
+                                                                -Length 8 `
+                                                                -ErrorAction Stop
+                                        $ParamFileObj.parameters.($ParameterName).Value[$ValueCount] = $RandomAppName
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    # Set Value
+                                    $RandomAppName = Get-ARMTemplateRandomAppName `
+                                                            -Length 8 `
+                                                            -ErrorAction Stop
+                                    $ParamFileObj.parameters.($ParameterName).Value = $RandomAppName
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+
+                            # Check if there are multiple values
+                            If ($null -ne $ParamFileObj.parameters.parameters.($ParameterName).Value)
+                            {
+                                If (($ParamFileObj.parameters.parameters.($ParameterName).Value.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    foreach ($PValue in $ParamFileObj.parameters.parameters.($ParameterName).Value)
+                                    {
+                                        # Set Value
+                                        $RandomAppName = Get-ARMTemplateRandomAppName `
+                                                                -Length 8 `
+                                                                -ErrorAction Stop
+                                        $ParamFileObj.parameters.parameters.($ParameterName).Value[$ValueCount] = $RandomAppName
+                                        $ParamFileObjChanged = $true
+                                        $ValueCount++
+                                    }
+                                }
+                                Else
+                                {
+                                    # Set Value
+                                    $RandomAppName = Get-ARMTemplateRandomAppName `
+                                                            -Length 8 `
+                                                            -ErrorAction Stop
+                                    $ParamFileObj.parameters.parameters.($ParameterName).Value = $RandomAppName
+                                    $ParamFileObjChanged = $true
+                                }
+                            }
+                        }
+                    }
+                }
+                #endregion
+                #>
             }
             Catch
             {
@@ -3742,16 +4461,30 @@ param (
             }
             If ($PSCmdlet.ShouldProcess("Saving $NewARMTemplateParamFilePath file.")) 
             {
-                # Convert log to JSON and write it into file
-                $ParamFileObj | `
-                    ConvertTo-Json `
-                        -Depth 10 `
-                        -ErrorAction Stop | `
-                    Out-File `
-                        -FilePath $NewARMTemplateParamFilePath `
-                        -Encoding utf8 `
-                        -Force `
-                        -ErrorAction Stop
+                # Convert log to JSON
+                $ParamFileObjJson = $ParamFileObj | `
+                                            ConvertTo-Json `
+                                            -Depth 10 `
+                                            -ErrorAction Stop 
+                
+                # Fixing convertion of certain characters
+                $dReplacements = @{
+                                '\\u003c' = '<'
+                                '\\u003e' = '>'
+                                '\\u0027' = "'"
+                                }
+
+                foreach ($oEnumerator in $dReplacements.GetEnumerator()) 
+                {
+                    $ParamFileObjJson = $ParamFileObjJson -replace $oEnumerator.Key, $oEnumerator.Value
+                }
+                
+                # Write to file    
+                $ParamFileObjJson | Out-File `
+                                         -FilePath $NewARMTemplateParamFilePath `
+                                         -Force `
+                                         -Encoding utf8 `
+                                         -ErrorAction Stop
             }
             
             #region Information
@@ -4169,6 +4902,91 @@ param (
                     }
                 }
                 #endregion
+
+                <#reserved
+                #region Exact Location Keywords
+                $ExactLocationKeywords = @()
+                $ResourceGroupLocation = $AzureRegion
+
+                # Go trough every keyword
+                foreach ($ExactLocationKeyword in $ExactLocationKeywords)
+                {
+                    $ParameterNames = $TemplateFileObj.parameters | `
+                                        Get-Member `
+                                            -ErrorAction Stop | `
+                                        Where-Object MemberType -EQ NoteProperty `
+                                            -ErrorAction Stop | `
+                                        Select-Object -ExpandProperty Name `
+                                            -ErrorAction Stop
+
+                    # Go trough every Parameter Name
+                    foreach ($ParameterName in $ParameterNames)
+                    {
+                        If ($ParameterName -eq $ExactLocationKeyword)
+                        {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword match: ' + $ExactLocationKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
+                            # Check if there are multiple values
+                            If ($TemplateFileObj.parameters.($ParameterName).allowedValues)
+                            {
+                                If (($TemplateFileObj.parameters.($ParameterName).allowedValues.GetType() | Select-Object -ExpandProperty Name) -eq 'Object[]')
+                                {
+                                    $ValueCount = 0
+                                    $foundValue = $false
+                                    foreach ($PValue in $TemplateFileObj.parameters.($ParameterName).allowedValues)
+                                    {
+                                        # Find if Value already exists
+                                        If ($TemplateFileObj.parameters.($ParameterName).allowedValues[$ValueCount] -eq $ResourceGroupLocation)
+                                        {
+                                            $foundValue = $true;break;
+                                        }
+                                        
+                                        $ValueCount++
+                                    }
+                                    # If does not exists add it
+                                    If ($foundValue -eq $false)
+                                    {
+                                        $TemplateFileObj.parameters.($ParameterName).allowedValues += $ResourceGroupLocation
+                                        $TemplateFileObjChanged = $true
+                                    }
+                                }
+                                Else
+                                {
+                                    $TemplateFileObj.parameters.($ParameterName).allowedValues = $ResourceGroupLocation
+                                    $TemplateFileObjChanged = $true
+                                }
+                            }
+
+                            # Check for defaultValue
+                            If ($TemplateFileObj.parameters.($ParameterName).defaultValue)
+                            {
+                                $TemplateFileObj.parameters.($ParameterName).defaultValue = $ResourceGroupLocation
+                                $TemplateFileObjChanged = $true
+                            }
+                            Else
+                            {
+                                # Create defaultValue
+                                If ($CreateDefaultValue -eq $true)
+                                {
+                                    $TemplateFileObj.parameters.($ParameterName) | Add-Member `
+                                                                                    -MemberType NoteProperty `
+                                                                                    -Name defaultValue `
+                                                                                    -Value $ResourceGroupLocation `
+                                                                                    -ErrorAction Stop | Out-Null
+                                    $TemplateFileObjChanged = $true
+                                }
+                            }
+                        }
+                    }
+                }
+                #endregion
+                #>
             }
             Catch
             {
@@ -4596,7 +5414,7 @@ param (
         {
             Try
             {
-                #region DNS Label Keywords
+                #region Password Keywords
                 $PasswordKeywords = @('Password')
 
                 # Go trough every keyword
@@ -4654,6 +5472,67 @@ param (
                     }
                 }
                 #endregion
+
+                <#reserved
+                #region Exact Password Keywords
+                $ExactPasswordKeywords = @()
+
+                # Go trough every keyword
+                foreach ($ExactPasswordKeyword in $ExactPasswordKeywords)
+                {
+                    $ParameterNames = $TemplateFileObj.parameters | `
+                                        Get-Member `
+                                            -ErrorAction Stop | `
+                                        Where-Object MemberType -EQ NoteProperty `
+                                            -ErrorAction Stop | `
+                                        Select-Object -ExpandProperty Name `
+                                            -ErrorAction Stop
+
+                    # Go trough every Parameter Name
+                    foreach ($ParameterName in $ParameterNames)
+                    {
+                        If ($ParameterName -eq $ExactPasswordKeyword)
+                        {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword match: ' + $ExactPasswordKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
+                            # Check for defaultValue
+                            If ($TemplateFileObj.parameters.($ParameterName).defaultValue)
+                            {
+                                # Set Value
+                                $PasswordString = Get-ARMTemplateRandomPassword `
+                                                        -Length 10 `
+                                                        -ErrorAction Stop
+                                $TemplateFileObj.parameters.($ParameterName).defaultValue = $PasswordString
+                                $TemplateFileObjChanged = $true
+                            }
+                            Else
+                            {
+                                # Create defaultValue
+                                If ($CreateDefaultValue -eq $true)
+                                {
+                                    # Set Value
+                                    $PasswordString = Get-ARMTemplateRandomPassword `
+                                                            -Length 10 `
+                                                            -ErrorAction Stop
+                                    $TemplateFileObj.parameters.($ParameterName) | Add-Member `
+                                                                                    -MemberType NoteProperty `
+                                                                                    -Name defaultValue `
+                                                                                    -Value $PasswordString `
+                                                                                    -ErrorAction Stop | Out-Null
+                                    $TemplateFileObjChanged = $true
+                                }
+                            }
+                        }
+                    }
+                }
+                #endregion
+                #>
             }
             Catch
             {
@@ -4673,6 +5552,65 @@ param (
         {
             Try
             {
+                <#reserved
+                #region SSH Key Data Keywords
+                $SSHKeyDataKeywords = @()
+
+                # Go trough every keyword
+                foreach ($SSHKeyDataKeyword in $SSHKeyDataKeywords)
+                {
+                    $ParameterNames = $TemplateFileObj.parameters | `
+                                        Get-Member `
+                                            -ErrorAction Stop | `
+                                        Where-Object MemberType -EQ NoteProperty `
+                                            -ErrorAction Stop | `
+                                        Select-Object -ExpandProperty Name `
+                                            -ErrorAction Stop
+
+                    # Go trough every Parameter Name
+                    foreach ($ParameterName in $ParameterNames)
+                    {
+                        If ($ParameterName -match $SSHKeyDataKeyword)
+                        {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword exact match: ' + $SSHKeyDataKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
+                            # Check for defaultValue
+                            If ($TemplateFileObj.parameters.($ParameterName).defaultValue)
+                            {
+                                # Set Value
+                                $SSHKeyDataString = Get-ARMTemplateSSHPublicKeyData `
+                                                        -ErrorAction Stop
+                                $TemplateFileObj.parameters.($ParameterName).defaultValue = $SSHKeyDataString
+                                $TemplateFileObjChanged = $true
+                            }
+                            Else
+                            {
+                                # Create defaultValue
+                                If ($CreateDefaultValue -eq $true)
+                                {
+                                    # Set Value
+                                    $SSHKeyDataString = Get-ARMTemplateSSHPublicKeyData `
+                                                            -ErrorAction Stop
+                                    $TemplateFileObj.parameters.($ParameterName) | Add-Member `
+                                                                                    -MemberType NoteProperty `
+                                                                                    -Name defaultValue `
+                                                                                    -Value $SSHKeyDataString `
+                                                                                    -ErrorAction Stop | Out-Null
+                                    $TemplateFileObjChanged = $true
+                                }
+                            }
+                        }
+                    }
+                }
+                #endregion
+                #>
+
                 #region Exact SSH Key Data Keywords
                 $ExactSSHKeyDataKeywords = @('sshKeyData','sshPublicKey')
 
@@ -4806,6 +5744,67 @@ param (
                     }
                 }
                 #endregion
+
+                <#reserved
+                #region Exact VM Name Keywords
+                $ExactVMNameKeywords = @()
+
+                # Go trough every keyword
+                foreach ($ExactVMNameKeyword in $ExactVMNameKeywords)
+                {
+                    $ParameterNames = $TemplateFileObj.parameters | `
+                                        Get-Member `
+                                            -ErrorAction Stop | `
+                                        Where-Object MemberType -EQ NoteProperty `
+                                            -ErrorAction Stop | `
+                                        Select-Object -ExpandProperty Name `
+                                            -ErrorAction Stop
+
+                    # Go trough every Parameter Name
+                    foreach ($ParameterName in $ParameterNames)
+                    {
+                        If ($ParameterName -eq $ExactVMNameKeyword)
+                        {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword match: ' + $ExactVMNameKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
+                            # Check for defaultValue
+                            If ($TemplateFileObj.parameters.($ParameterName).defaultValue)
+                            {
+                                # Set Value
+                                $VMName = Get-ARMTemplateRandomVMName  `
+                                                        -Length 8 `
+                                                        -ErrorAction Stop
+                                $TemplateFileObj.parameters.($ParameterName).defaultValue = $VMName
+                                $TemplateFileObjChanged = $true
+                            }
+                            Else
+                            {
+                                # Create defaultValue
+                                If ($CreateDefaultValue -eq $true)
+                                {
+                                    # Set Value
+                                    $VMName = Get-ARMTemplateRandomVMName  `
+                                                            -Length 8 `
+                                                            -ErrorAction Stop
+                                    $TemplateFileObj.parameters.($ParameterName) | Add-Member `
+                                                                                    -MemberType NoteProperty `
+                                                                                    -Name defaultValue `
+                                                                                    -Value $VMName `
+                                                                                    -ErrorAction Stop | Out-Null
+                                    $TemplateFileObjChanged = $true
+                                }
+                            }
+                        }
+                    }
+                }
+                #endregion
+                #>
             }
             Catch
             {
@@ -5019,6 +6018,67 @@ param (
                     }
                 }
                 #endregion
+
+                <#reserved
+                #region Exact App Name Keywords
+                $ExactAppNameKeywords = @()
+
+                # Go trough every keyword
+                foreach ($ExactAppNameKeyword in $ExactAppNameKeywords)
+                {
+                    $ParameterNames = $TemplateFileObj.parameters | `
+                                        Get-Member `
+                                            -ErrorAction Stop | `
+                                        Where-Object MemberType -EQ NoteProperty `
+                                            -ErrorAction Stop | `
+                                        Select-Object -ExpandProperty Name `
+                                            -ErrorAction Stop
+                    
+                    # Go trough every Parameter Name
+                    foreach ($ParameterName in $ParameterNames)
+                    {
+                        If ($ParameterName -eq $ExactAppNameKeyword)
+                        {
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Keyword match: ' + $ExactAppNameKeyword
+                            Write-Verbose `
+                                  -Message $VerboseMessage 
+
+                            $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Parameter Name: ' + $ParameterName
+                            Write-Verbose `
+                                  -Message $VerboseMessage
+
+                            # Check for defaultValue
+                            If ($TemplateFileObj.parameters.($ParameterName).defaultValue)
+                            {
+                                # Set Value
+                                $RandomAppName = Get-ARMTemplateRandomAppName `
+                                                        -Length 8 `
+                                                        -ErrorAction Stop
+                                $TemplateFileObj.parameters.($ParameterName).defaultValue = $RandomAppName
+                                $TemplateFileObjChanged = $true
+                            }
+                            Else
+                            {
+                                # Create defaultValue
+                                If ($CreateDefaultValue -eq $true)
+                                {
+                                    # Set Value
+                                    $RandomAppName = Get-ARMTemplateRandomAppName `
+                                                            -Length 8 `
+                                                            -ErrorAction Stop
+                                    $TemplateFileObj.parameters.($ParameterName) | Add-Member `
+                                                                                    -MemberType NoteProperty `
+                                                                                    -Name defaultValue `
+                                                                                    -Value $RandomAppName `
+                                                                                    -ErrorAction Stop | Out-Null
+                                    $TemplateFileObjChanged = $true
+                                }
+                            }
+                        }
+                    }
+                }
+                #endregion
+                #>
             }
             Catch
             {
@@ -5056,17 +6116,30 @@ param (
             }
             If ($PSCmdlet.ShouldProcess("Saving $NewARMTemplateFilePath file.")) 
             {
+                # Convert log to JSON
+                $TemplateFileObjJson = $TemplateFileObj | `
+                                            ConvertTo-Json `
+                                            -Depth 20 `
+                                            -ErrorAction Stop 
                 
-                # Convert log to JSON and write it into file
-                $TemplateFileObj | `
-                    ConvertTo-Json `
-                        -Depth 20 `
-                        -ErrorAction Stop | `
-                    Out-File `
-                        -FilePath $NewARMTemplateFilePath `
-                        -Encoding utf8 `
-                        -Force `
-                        -ErrorAction Stop
+                # Fixing convertion of certain characters
+                $dReplacements = @{
+                                '\\u003c' = '<'
+                                '\\u003e' = '>'
+                                '\\u0027' = "'"
+                                }
+
+                foreach ($oEnumerator in $dReplacements.GetEnumerator()) 
+                {
+                    $TemplateFileObjJson = $TemplateFileObjJson -replace $oEnumerator.Key, $oEnumerator.Value
+                }
+                
+                # Write to file    
+                $TemplateFileObjJson | Out-File `
+                                         -FilePath $NewARMTemplateFilePath `
+                                         -Force `
+                                         -Encoding utf8 `
+                                         -ErrorAction Stop
             }
             
             #region Information
@@ -5918,7 +6991,15 @@ param (
             {
                 $DeploymentError = $null
                 $AzureDeploymentOutput = $null
-                $DeploymentName = ($ARMTemplateFolderName + '-' + ((Get-Date).ToUniversalTime()).ToString('ddMMyy-HHmmss'))
+                If ($ARMTemplateFolderName.Length -gt 50)
+                {
+                    $DeploymentName = ($ARMTemplateFolderName.Substring(0,$ARMTemplateFolderName.Length + (50 - $ARMTemplateFolderName.Length)) + '-' + ((Get-Date).ToUniversalTime()).ToString('ddMMyy-HHmmss'))
+                }
+                Else
+                {
+                    $DeploymentName = ($ARMTemplateFolderName + '-' + ((Get-Date).ToUniversalTime()).ToString('ddMMyy-HHmmss'))
+                }
+                
                 
                 $VerboseMessage = (Get-Date -Format HH:mm:ss).ToString() + ' - Variable $DeploymentName is: ' + $DeploymentName
                 Write-Verbose `
@@ -7007,15 +8088,25 @@ param (
 
 
             # Convert and save log
-            $FullLogObj | `
-                ConvertTo-Json `
-                    -Depth 20 `
-                    -ErrorAction Stop | `
-                Out-File `
-                    -FilePath $FullLogPath `
-                    -Encoding unicode `
-                    -Force `
-                    -ErrorAction Stop
+            $FullLogObjJson = $FullLogObj | `
+                                ConvertTo-Json `
+                                    -Depth 20 `
+                                    -ErrorAction Stop 
+            # Fixing convertion of certain characters
+            $dReplacements = @{
+                            '\\u003c' = '<'
+                            '\\u003e' = '>'
+                            '\\u0027' = "'"
+                            }
+            foreach ($oEnumerator in $dReplacements.GetEnumerator()) 
+            {
+                $FullLogObjJson = $FullLogObjJson -replace $oEnumerator.Key, $oEnumerator.Value
+            }
+            $FullLogObjJson | Out-File `
+                                -FilePath $FullLogPath `
+                                -Encoding utf8 `
+                                -Force `
+                                -ErrorAction Stop
             
             #region Information
             $InformationMessage = 'INFO: ' + (Get-Date -Format HH:mm:ss).ToString() + ' - Merged ' + $LogType + ' log. ' + $LogType + ' summarized log location: ' + $FullLogPath

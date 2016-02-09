@@ -13,7 +13,7 @@ id_rsa passphrase: Lum@G@t3
 RootModule = 'ARMTemplateTest.psm1'
 
 # Version number of this module.
-ModuleVersion = '3.0.0'
+ModuleVersion = '3.0.4'
 
 # ID used to uniquely identify this module
 GUID = 'c87626f0-cf4a-48c2-bbda-1bb0550da287'
